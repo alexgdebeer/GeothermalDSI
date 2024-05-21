@@ -141,49 +141,50 @@ end
 # Prior and error distribution
 # ----------------
 
-lnk_μ = -31
-σ_bounds = (0.5, 1.25)
-l_bounds = (200, 1000)
+m_lnk = -31.0
+σ_lnk = 1.0
+l_lnk = 400.0
 
-pr = MaternField(grid_c, lnk_μ, σ_bounds, l_bounds)
+pr = MaternField(grid_c, m_lnk, σ_lnk, l_lnk)
 
 σ_ϵ = p0 * 0.01
 C_ϵ = diagm(fill(σ_ϵ^2, model_f.ny))
 
 C_ϵ_inv = spdiagm(fill(σ_ϵ^-2, model_f.ny))
 
-# ----------------
-# Truth and observations
-# ----------------
+# # ----------------
+# # Truth and observations
+# # ----------------
 
-# θ_t, u_t, F_t, G_t = generate_truth(grid_f, model_f, lnk_μ, σ_bounds, l_bounds)
-θ_t, u_t, F_t, G_t = read_truth()
+# # θ_t, u_t, F_t, G_t = generate_truth(grid_f, model_f, lnk_μ, σ_bounds, l_bounds)
+# θ_t, u_t, F_t, G_t = read_truth()
 
-# d_obs = generate_obs(G_t, C_ϵ)
-d_obs = read_obs()
+# # d_obs = generate_obs(G_t, C_ϵ)
+# d_obs = read_obs()
 
-# ----------------
-# POD
-# ----------------
+# # ----------------
+# # POD
+# # ----------------
 
-# Generate POD basis 
-# μ_pi, V_ri, μ_ε, C_ε = generate_pod_data(grid_c, model_c, pr, 100, 0.999, "pod/grid_$(grid_c.nx)")
-μ_pi, V_ri, μ_ε, C_ε = read_pod_data("pod/grid_$(grid_c.nx)")
+# # Generate POD basis 
+# # μ_pi, V_ri, μ_ε, C_ε = generate_pod_data(grid_c, model_c, pr, 100, 0.999, "pod/grid_$(grid_c.nx)")
+# μ_pi, V_ri, μ_ε, C_ε = read_pod_data("pod/grid_$(grid_c.nx)")
 
-μ_e = μ_ε .+ 0.0
-C_e = Hermitian(C_ϵ + C_ε)
-C_e_inv = Hermitian(inv(C_e))
-L_e = cholesky(C_e_inv).U
+# μ_e = μ_ε .+ 0.0
+# C_e = Hermitian(C_ϵ + C_ε)
+# C_e_inv = Hermitian(inv(C_e))
+# L_e = cholesky(C_e_inv).U
 
-model_r = ReducedOrderModel(
-    grid_c, ϕ, μ, c, p0, wells_c, well_change_times,
-    x_obs, y_obs, t_obs, μ_pi, V_ri, μ_e, C_e
-)
+# t_pred = [84, 88, 92, 96, 100, 104, 108, 112, 116, 120]
 
-# ----------------
-# Model functions
-# ----------------
+# model_r = ReducedOrderModel(
+#     grid_c, ϕ, μ, c, p0, wells_c, well_change_times,
+#     x_obs, y_obs, t_obs, t_pred, μ_pi, V_ri, μ_e, C_e
+# )
 
-F(u::AbstractVector) = solve(grid_c, model_r, u)
-G(p::AbstractVector) = model_c.B * p
+# # ----------------
+# # Model functions
+# # ----------------
 
+# F(u::AbstractVector) = solve(grid_c, model_r, u)
+# G(p::AbstractVector) = model_c.B * p
