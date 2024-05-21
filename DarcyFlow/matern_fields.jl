@@ -4,7 +4,7 @@ using LinearAlgebra
 
 struct MaternField
 
-    m::AbstractVector
+    μ::AbstractVector
     C::AbstractMatrix 
     L::AbstractMatrix
 
@@ -17,7 +17,7 @@ struct MaternField
         l::Real
     )
         
-        m = fill(m, g.nx^2)
+    μ = fill(m, g.nx^2)
         C = zeros(g.nx^2, g.nx^2)
 
         cs = [[xi, xj] for xi ∈ g.xs, xj ∈ g.xs]
@@ -28,7 +28,7 @@ struct MaternField
 
         L = cholesky(C + 1e-8I).L
 
-        return new(m, C, L, g.nx^2)
+        return new(μ, C, L, g.nx^2)
 
     end
 
@@ -47,5 +47,5 @@ function transform(
     mf::MaternField,
     θ::AbstractVecOrMat
 )
-    return mf.m + mf.L * θ
+    return mf.μ + mf.L * θ
 end

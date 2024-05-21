@@ -83,8 +83,8 @@ function generate_truth(
     g::Grid,
     m::Model,
     μ::Real,
-    σ_bounds::Tuple,
-    l_bounds::Tuple
+    σ::Tuple,
+    l::Tuple
 )
 
     true_field = MaternField(g, μ, σ_bounds, l_bounds)
@@ -152,11 +152,11 @@ C_ϵ = diagm(fill(σ_ϵ^2, model_f.ny))
 
 C_ϵ_inv = spdiagm(fill(σ_ϵ^-2, model_f.ny))
 
-# # ----------------
-# # Truth and observations
-# # ----------------
+# ----------------
+# Truth and observations
+# ----------------
 
-# # θ_t, u_t, F_t, G_t = generate_truth(grid_f, model_f, lnk_μ, σ_bounds, l_bounds)
+θ_t, u_t, F_t, G_t = generate_truth(grid_f, model_f, lnk_μ, σ_bounds, l_bounds)
 # θ_t, u_t, F_t, G_t = read_truth()
 
 # # d_obs = generate_obs(G_t, C_ϵ)
