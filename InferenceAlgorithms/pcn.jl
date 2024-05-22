@@ -1,6 +1,3 @@
-using Distributions
-
-
 UNIT_NORM = Normal()
 
 
@@ -53,7 +50,7 @@ function run_chain(
         ω_p = √(1-β^2) * ωs[:, ind_c] + β*ζ
         θ_p = transform(pr, ω_p)
         F_p = F(θ_p)
-        G_p = G(θ_p)
+        G_p = G(F_p)
 
         h = exp(loglik(G_p) - loglik(Gs[:, ind_c]))
 
@@ -78,6 +75,8 @@ function run_chain(
             h5write("data/pcn/chain_$n_chain.h5", "θs_$n_chunk", θs[:, 1:thin:end])
             h5write("data/pcn/chain_$n_chain.h5", "τs_$n_chunk", τs[:, 1:thin:end])
 
+            GC.gc()
+
             n_chunk += 1
 
             if verbose
@@ -101,6 +100,7 @@ function run_chain(
 
 end
 
+
 function run_pcn(
     F::Function,
     G::Function,
@@ -115,7 +115,7 @@ function run_pcn(
     verbose::Bool=true
 )
 
-    verbose && println("Chain | Iters | logpost   | time (s)")
+    verbose && println("Chain | Iters | Acc.   | logpost   | time (s)")
 
     NG = length(d_obs)
 

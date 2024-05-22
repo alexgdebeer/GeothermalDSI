@@ -160,7 +160,8 @@ pr = MaternField(grid_c, μ_lnk, σ_lnk, l_lnk)
 σ_e = p0 * 0.01
 μ_e = zeros(model_f.n_obs)
 C_e = diagm(fill(σ_e^2, model_f.n_obs))
-C_e_inv = spdiagm(fill(σ_e^-2, model_f.n_obs))
+C_e_inv = Diagonal(fill(σ_e^-2, model_f.n_obs))
+L_e = sqrt(C_e_inv)
 e_dist = MvNormal(μ_e, C_e)
 
 # ----------------
