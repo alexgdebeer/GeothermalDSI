@@ -1,5 +1,6 @@
 using SparseArrays
 
+
 """Well that has been mollified using a bump function of radius r."""
 struct Well
 
@@ -46,7 +47,9 @@ struct Well
 
 end
 
+
 abstract type AbstractModel end
+
 
 struct Model <: AbstractModel
 
@@ -56,11 +59,13 @@ struct Model <: AbstractModel
     p0::Real
 
     Q::SparseMatrixCSC
-    B::SparseMatrixCSC
+    B_obs::SparseMatrixCSC
+    B_preds::SparseMatrixCSC
     B_wells::SparseMatrixCSC
 
-    ny::Int
-    nyi::Int
+    n_obs::Int
+    n_preds::Int
+    n_wells::Int
 
     function Model(
         g::Grid,
@@ -70,24 +75,36 @@ struct Model <: AbstractModel
         p0::Real,
         wells::AbstractVector{Well},
         well_change_times::AbstractVector,
-        x_obs::AbstractVector,
-        y_obs::AbstractVector,
-        t_obs::AbstractVector
+        x_wells::AbstractVector,
+        y_wells::AbstractVector,
+        t_obs::AbstractVector,
+        t_preds::AbstractVector
     )
 
-        nyi = length(x_obs)
-        ny = nyi * length(t_obs)
+        n_wells = length(x_wells)
+        n_obs = n_wells * length(t_obs)
+        n_preds = n_wells * length(t_preds)
 
-        t_obs_inds = [findfirst(g.ts .>= t) for t ∈ t_obs]
+        t_obs_inds = [findfirst(g.ts .>= t-1e-8) for t ∈ t_obs]
+        t_pred_inds = [findfirst(g.ts .>= t-1e-8) for t ∈ t_preds]
 
         Q = build_Q(g, wells, well_change_times)
-        B, B_wells = build_B(g, ny, nyi, x_obs, y_obs, t_obs_inds)
 
-        return new(ϕ, μ, c, p0, Q, B, B_wells, ny, nyi)
+        B_obs, B_preds, B_wells = build_Bs(
+            g, n_wells, n_obs, n_preds, 
+            x_wells, y_wells, t_obs_inds, t_pred_inds
+        )
+
+        return new(
+            ϕ, μ, c, p0, Q, 
+            B_obs, B_preds, B_wells, 
+            n_obs, n_preds, n_wells
+        )
 
     end
 
 end
+
 
 struct ReducedOrderModel <: AbstractModel
 
@@ -97,10 +114,10 @@ struct ReducedOrderModel <: AbstractModel
     p0::Real
 
     Q::SparseMatrixCSC
-    B::SparseMatrixCSC
+    B_obs::SparseMatrixCSC
+    B_preds::SparseMatrixCSC
     B_wells::SparseMatrixCSC
     BV_r::SparseMatrixCSC
-    P::SparseMatrixCSC
 
     μ_pi::AbstractVector
     V_ri::AbstractMatrix
@@ -112,8 +129,8 @@ struct ReducedOrderModel <: AbstractModel
 
     np_r::Int
     n_obs::Int
-    n_pred::Int
-    nyi::Int
+    n_preds::Int
+    n_wells::Int
 
     function ReducedOrderModel(
         g::Grid,
@@ -123,10 +140,10 @@ struct ReducedOrderModel <: AbstractModel
         p0::Real,
         wells::AbstractVector{Well},
         well_change_times::AbstractVector,
-        x_obs::AbstractVector,
-        y_obs::AbstractVector,
+        x_wells::AbstractVector,
+        y_wells::AbstractVector,
         t_obs::AbstractVector,
-        t_pred::AbstractVector,
+        t_preds::AbstractVector,
         μ_pi::AbstractVector,
         V_ri::AbstractMatrix,
         μ_e::AbstractVector,
@@ -134,44 +151,51 @@ struct ReducedOrderModel <: AbstractModel
     )
 
         np_r = size(V_ri, 2)
-        nyi = length(x_obs)
-        n_obs = nyi * length(t_obs)
-        n_pred = nyi * length(t_pred)
+        n_wells = length(x_wells)
+        n_obs = n_wells * length(t_obs)
+        n_preds = n_wells * length(t_preds)
 
         t_obs_inds = [findfirst(g.ts .>= t-1e-8) for t ∈ t_obs]
-        t_pred_inds = [findfirst(g.ts .>= t-1e-8) for t ∈ t_pred]
+        t_pred_inds = [findfirst(g.ts .>= t-1e-8) for t ∈ t_preds]
 
         Q = build_Q(g, wells, well_change_times)
-        B, B_wells = build_B(g, n_obs, nyi, x_obs, y_obs, t_obs_inds)
-        P = build_P(g, n_pred, nyi, x_obs, y_obs, t_pred_inds)
+
+        B_obs, B_preds, B_wells = build_Bs(
+            g, n_wells, n_obs, n_preds, 
+            x_wells, y_wells, t_obs_inds, t_pred_inds
+        )
 
         V_r = sparse(kron(sparse(I, g.nt, g.nt), V_ri))
-        BV_r = B * V_r
+        BV_r = B_obs * V_r
 
         C_e_inv = Hermitian(inv(C_e))
         L_e = cholesky(C_e_inv).U
 
         return new(
             ϕ, μ, c, p0, 
-            Q, B, B_wells, BV_r, P, 
+            Q, B_obs, B_preds, B_wells, BV_r, 
             μ_pi, V_ri, 
             μ_e, C_e, C_e_inv, L_e,
-            np_r, n_obs, n_pred, nyi
+            np_r, n_obs, n_preds, n_wells
         )
 
     end
 
 end
 
-"""Builds the observation operator."""
-function build_B(
+
+"""Builds operators that map between the full simulation outputs and
+the observations and predictive QoIs."""
+function build_Bs(
     g::Grid,
-    ny::Int,
-    nyi::Int,
-    x_obs::AbstractVector,
-    y_obs::AbstractVector,
-    t_obs_inds::AbstractVector 
-)::Tuple{SparseMatrixCSC, SparseMatrixCSC}
+    n_wells::Int,
+    n_obs::Int,
+    n_preds::Int,
+    x_wells::AbstractVector,
+    y_wells::AbstractVector,
+    t_obs_inds::AbstractVector,
+    t_pred_inds::AbstractVector
+)
 
     function get_cell_index(xi::Int, yi::Int)
         return xi + g.nx * (yi-1)
@@ -181,7 +205,7 @@ function build_B(
     js = Int[]
     vs = Float64[]
 
-    for (i, (x, y)) ∈ enumerate(zip(x_obs, y_obs))
+    for (i, (x, y)) ∈ enumerate(zip(x_wells, y_wells))
 
         ix0 = findfirst(g.xs .> x) - 1
         iy0 = findfirst(g.xs .> y) - 1
@@ -207,78 +231,28 @@ function build_B(
 
     end
 
-    B = spzeros(ny, g.nx^2 * g.nt)
-    Bi = sparse(is, js, vs, nyi, g.nx^2)
+    B_obs = spzeros(n_obs, g.nx^2 * g.nt)
+    B_pred = spzeros(n_preds, g.nx^2 * g.nt)
+    Bi = sparse(is, js, vs, n_wells, g.nx^2)
 
     for (i, t) ∈ enumerate(t_obs_inds)
-        ii = (i-1) * nyi
+        ii = (i-1) * n_wells
         jj = (t-1) * g.nx^2
-        B[(ii+1):(ii+nyi), (jj+1):(jj+g.nx^2)] = Bi
+        B_obs[(ii+1):(ii+n_wells), (jj+1):(jj+g.nx^2)] = Bi
+    end
+
+    for (i, t) ∈ enumerate(t_pred_inds)
+        ii = (i-1) * n_wells
+        jj = (t-1) * g.nx^2
+        B_pred[(ii+1):(ii+n_wells), (jj+1):(jj+g.nx^2)] = Bi
     end
 
     B_wells = blockdiag([Bi for _ ∈ 1:g.nt]...)
 
-    return B, B_wells
+    return B_obs, B_pred, B_wells
 
 end
 
-"""Builds the operator that extracts the predictive quantities of 
-interest from a set of model output."""
-function build_P(
-    g::Grid,
-    ny::Int,
-    nyi::Int,
-    x_pred::AbstractVector,
-    y_pred::AbstractVector,
-    t_pred_inds::AbstractVector 
-)::SparseMatrixCSC
-
-    function get_cell_index(xi::Int, yi::Int)
-        return xi + g.nx * (yi-1)
-    end
-
-    is = Int[]
-    js = Int[]
-    vs = Float64[]
-
-    for (i, (x, y)) ∈ enumerate(zip(x_pred, y_pred))
-
-        ix0 = findfirst(g.xs .> x) - 1
-        iy0 = findfirst(g.xs .> y) - 1
-        ix1 = ix0 + 1
-        iy1 = iy0 + 1
-
-        x0, x1 = g.xs[ix0], g.xs[ix1]
-        y0, y1 = g.xs[iy0], g.xs[iy1]
-
-        inds = [(ix0, iy0), (ix0, iy1), (ix1, iy0), (ix1, iy1)]
-        cell_inds = [get_cell_index(i...) for i ∈ inds]
-
-        Z = (x1-x0) * (y1-y0)
-
-        push!(is, i, i, i, i)
-        push!(js, cell_inds...)
-        push!(vs,
-            (x1-x) * (y1-y) / Z, 
-            (x1-x) * (y-y0) / Z, 
-            (x-x0) * (y1-y) / Z, 
-            (x-x0) * (y-y0) / Z
-        )
-
-    end
-
-    P = spzeros(ny, g.nx^2 * g.nt)
-    Pi = sparse(is, js, vs, nyi, g.nx^2)
-
-    for (i, t) ∈ enumerate(t_pred_inds)
-        ii = (i-1) * nyi
-        jj = (t-1) * g.nx^2
-        P[(ii+1):(ii+nyi), (jj+1):(jj+g.nx^2)] = Pi
-    end
-
-    return P
-
-end
 
 """Builds the forcing term at each time index."""
 function build_Q(

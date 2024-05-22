@@ -37,9 +37,10 @@ well_centres = [
     (850, 150), (850, 500), (850, 850)
 ]
 
-x_obs = [c[1] for c ∈ well_centres]
-y_obs = [c[2] for c ∈ well_centres]
+x_wells = [c[1] for c ∈ well_centres]
+y_wells = [c[2] for c ∈ well_centres]
 t_obs = [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]
+t_preds = 84:4:160
 
 grid_c = Grid(xmax, tmax, Δx_c, Δt_c)
 grid_f = Grid(xmax, tmax, Δx_f, Δt_f)
@@ -76,22 +77,31 @@ wells_f = [
     for (centre, rates) ∈ zip(well_centres, well_rates_f)
 ]
 
-model_f = Model(grid_f, ϕ, μ, c, p0, wells_f, well_change_times, x_obs, y_obs, t_obs)
-model_c = Model(grid_c, ϕ, μ, c, p0, wells_c, well_change_times, x_obs, y_obs, t_obs)
+model_f = Model(
+    grid_f, ϕ, μ, c, p0, 
+    wells_f, well_change_times, 
+    x_wells, y_wells, t_obs, t_preds
+)
+
+model_c = Model(
+    grid_c, ϕ, μ, c, p0, 
+    wells_c, well_change_times, 
+    x_wells, y_wells, t_obs, t_preds
+)
 
 function generate_truth(
     g::Grid,
     m::Model,
     μ::Real,
-    σ::Tuple,
-    l::Tuple
+    σ::Real,
+    l::Real
 )
 
-    true_field = MaternField(g, μ, σ_bounds, l_bounds)
+    true_field = MaternField(g, μ, σ, l)
     θ_t = vec(rand(true_field))
     u_t = transform(true_field, θ_t)
     F_t = solve(g, m, u_t)
-    G_t = m.B * F_t
+    G_t = m.B_obs * F_t
 
     h5write(FILE_TRUTH, "θ_t", θ_t)
     h5write(FILE_TRUTH, "u_t", u_t)
@@ -141,50 +151,44 @@ end
 # Prior and error distribution
 # ----------------
 
-m_lnk = -31.0
+μ_lnk = -31.0
 σ_lnk = 1.0
 l_lnk = 400.0
 
-pr = MaternField(grid_c, m_lnk, σ_lnk, l_lnk)
+pr = MaternField(grid_c, μ_lnk, σ_lnk, l_lnk)
 
-σ_ϵ = p0 * 0.01
-C_ϵ = diagm(fill(σ_ϵ^2, model_f.ny))
-
-C_ϵ_inv = spdiagm(fill(σ_ϵ^-2, model_f.ny))
+σ_e = p0 * 0.01
+μ_e = zeros(model_f.n_obs)
+C_e = diagm(fill(σ_e^2, model_f.n_obs))
+C_e_inv = spdiagm(fill(σ_e^-2, model_f.n_obs))
+e_dist = MvNormal(μ_e, C_e)
 
 # ----------------
 # Truth and observations
 # ----------------
 
-θ_t, u_t, F_t, G_t = generate_truth(grid_f, model_f, lnk_μ, σ_bounds, l_bounds)
-# θ_t, u_t, F_t, G_t = read_truth()
+# θ_t, u_t, F_t, G_t = generate_truth(grid_f, model_f, μ_lnk, σ_lnk, l_lnk)
+θ_t, u_t, F_t, G_t = read_truth()
 
-# # d_obs = generate_obs(G_t, C_ϵ)
-# d_obs = read_obs()
+# d_obs = generate_obs(G_t, C_e)
+d_obs = read_obs()
 
-# # ----------------
-# # POD
-# # ----------------
+# ----------------
+# POD
+# ----------------
 
-# # Generate POD basis 
-# # μ_pi, V_ri, μ_ε, C_ε = generate_pod_data(grid_c, model_c, pr, 100, 0.999, "pod/grid_$(grid_c.nx)")
-# μ_pi, V_ri, μ_ε, C_ε = read_pod_data("pod/grid_$(grid_c.nx)")
+# Generate POD basis 
+# μ_pi, V_ri = generate_pod_data(grid_c, model_c, pr, 100, 0.999, "pod/grid_$(grid_c.nx)")
+μ_pi, V_ri = read_pod_data("pod/grid_$(grid_c.nx)")
 
-# μ_e = μ_ε .+ 0.0
-# C_e = Hermitian(C_ϵ + C_ε)
-# C_e_inv = Hermitian(inv(C_e))
-# L_e = cholesky(C_e_inv).U
+model_r = ReducedOrderModel(
+    grid_c, ϕ, μ, c, p0, wells_c, well_change_times,
+    x_wells, y_wells, t_obs, t_preds, μ_pi, V_ri, μ_e, C_e
+)
 
-# t_pred = [84, 88, 92, 96, 100, 104, 108, 112, 116, 120]
+# ----------------
+# Model functions
+# ----------------
 
-# model_r = ReducedOrderModel(
-#     grid_c, ϕ, μ, c, p0, wells_c, well_change_times,
-#     x_obs, y_obs, t_obs, t_pred, μ_pi, V_ri, μ_e, C_e
-# )
-
-# # ----------------
-# # Model functions
-# # ----------------
-
-# F(u::AbstractVector) = solve(grid_c, model_r, u)
-# G(p::AbstractVector) = model_c.B * p
+F(u::AbstractVector) = solve(grid_c, model_r, u)
+G(p::AbstractVector) = model_c.B_obs * p

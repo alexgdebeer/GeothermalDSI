@@ -17,7 +17,7 @@ struct MaternField
         l::Real
     )
         
-    μ = fill(m, g.nx^2)
+        μ = fill(m, g.nx^2)
         C = zeros(g.nx^2, g.nx^2)
 
         cs = [[xi, xj] for xi ∈ g.xs, xj ∈ g.xs]
@@ -26,7 +26,10 @@ struct MaternField
             C[i, j] = σ^2 * (1 + √3*dx/l) * exp(-√3*dx/l)
         end
 
-        L = cholesky(C + 1e-8I).L
+        # # Compute eigenvalues and eigenvectors
+        # @time eigendecomp = Eigen(C)
+        # λs = f.values
+        # vs = f.vectors
 
         return new(μ, C, L, g.nx^2)
 

@@ -68,7 +68,7 @@ function generate_pod_samples(
 
     θs = rand(pr, N)
     us = [transform(pr, θ_i) for θ_i ∈ eachcol(θs)]
-    ps = hcat([solve(g, m, u_i) for u_i ∈ us]...)
+    ps = hcat([@time solve(g, m, u_i) for u_i ∈ us]...)
     return ps
 
 end

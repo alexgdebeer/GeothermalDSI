@@ -18,13 +18,11 @@ function run_dsi(
     C_yx = C_joint[Nx+1:end, 1:Nx]
 
     m_post = m_y + C_yx * (C_xx \ (x_obs - m_x))
-    C_post = C_yy - C_yx * (C_xx \ C_xy)
+    C_post = C_yy - C_yx * (C_xx \ C_yx')
 
-    return m_post, C_post
+    return vec(m_post), Hermitian(C_post + 1I)
 
 end
-
-
 
 Ne = 1000
 
@@ -32,7 +30,23 @@ Ne = 1000
 us = hcat([transform(pr, θ) for θ ∈ eachcol(θs)]...)
 
 ps = hcat([F(u) for u ∈ eachcol(us)]...)
-ds = model_r.B * ps # TODO: add some noise to these.
-qs = model_r.P * ps
+es = rand(e_dist, Ne)
 
-m_post, C_post = run_dsi(ds, qs)
+y_obs = model_r.B_obs * ps + es
+y_pred = model_r.B_preds * ps
+
+m_post, C_post = run_dsi(y_obs, y_pred, d_obs)
+post = MvNormal(m_post, C_post)
+post_samples = rand(post, 1000)
+
+n_well = 1
+d_obs_well = reshape(d_obs, 9, :)[n_well, :]
+F_well = reshape(model_f.B_wells * F_t, 9, :)[n_well, :]
+
+post_samples_well = hcat(
+    [reshape(s, 9, :)[n_well, :] for s ∈ eachcol(post_samples)]...
+)
+
+plot(t_preds, post_samples_well)
+plot!(2:2:160, F_well)
+scatter!(t_obs, d_obs_well)
