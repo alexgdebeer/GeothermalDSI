@@ -6,15 +6,18 @@ struct MaternField
 
     μ::AbstractVector
     C::AbstractMatrix 
-    L::AbstractMatrix
+    λs::AbstractVector 
+    vs::AbstractMatrix
 
     Nθ::Int
+    Nω::Int
     
     function MaternField(
         g::Grid,
         m::Real,
         σ::Real,
-        l::Real
+        l::Real,
+        Nω::Int=50
     )
         
         μ = fill(m, g.nx^2)
@@ -22,16 +25,17 @@ struct MaternField
 
         cs = [[xi, xj] for xi ∈ g.xs, xj ∈ g.xs]
         for (i, ci) ∈ enumerate(cs), (j, cj) ∈ enumerate(cs)
-            dx = norm(ci-cj)
-            C[i, j] = σ^2 * (1 + √3*dx/l) * exp(-√3*dx/l)
+            C[i, j] = σ^2 * exp(-0.5 * (ci-cj)' * (ci-cj) / l^2)
         end
 
-        # # Compute eigenvalues and eigenvectors
-        # @time eigendecomp = Eigen(C)
-        # λs = f.values
-        # vs = f.vectors
+        C += 1e-8I
 
-        return new(μ, C, L, g.nx^2)
+        # Compute eigenvalues and eigenvectors
+        @time eigendecomp = eigen(C, sortby=(λ)->(-λ))
+        λs = eigendecomp.values[1:Nω]
+        vs = eigendecomp.vectors[:, 1:Nω]
+
+        return new(μ, C, λs, vs, g.nx^2, Nω)
 
     end
 
@@ -42,13 +46,13 @@ function Base.rand(
     mf::MaternField, 
     n::Int=1
 )
-    return rand(Normal(), mf.Nθ, n)
+    return rand(Normal(), mf.Nω, n)
 end
 
 
 function transform(
     mf::MaternField,
-    θ::AbstractVecOrMat
+    ωs::AbstractVecOrMat
 )
-    return mf.μ + mf.L * θ
+    return mf.μ + mf.vs * (sqrt.(mf.λs) .* ωs) 
 end

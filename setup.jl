@@ -25,8 +25,8 @@ p0 = 20 * 1.0e6                     # Initial pressure (Pa)
 xmax = 1000.0
 tmax = 160.0
 
-Δx_c = 12.5
-Δx_f = 7.5
+Δx_c = 20.0
+Δx_f = 10.0
 Δt_c = 4.0
 Δt_f = 2.0
 
@@ -39,8 +39,8 @@ well_centres = [
 
 x_wells = [c[1] for c ∈ well_centres]
 y_wells = [c[2] for c ∈ well_centres]
-t_obs = [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]
-t_preds = 84:4:160
+t_obs = [0, 8, 16, 24, 32, 40, 48, 56, 64]
+t_preds = 68:4:160
 
 grid_c = Grid(xmax, tmax, Δx_c, Δt_c)
 grid_f = Grid(xmax, tmax, Δx_f, Δt_f)
@@ -77,15 +77,15 @@ wells_f = [
     for (centre, rates) ∈ zip(well_centres, well_rates_f)
 ]
 
-model_f = Model(
-    grid_f, ϕ, μ, c, p0, 
-    wells_f, well_change_times, 
-    x_wells, y_wells, t_obs, t_preds
-)
-
 model_c = Model(
     grid_c, ϕ, μ, c, p0, 
     wells_c, well_change_times, 
+    x_wells, y_wells, t_obs, t_preds
+)
+
+model_f = Model(
+    grid_f, ϕ, μ, c, p0, 
+    wells_f, well_change_times, 
     x_wells, y_wells, t_obs, t_preds
 )
 
@@ -153,7 +153,7 @@ end
 
 μ_lnk = -31.0
 σ_lnk = 1.0
-l_lnk = 400.0
+l_lnk = 250.0
 
 pr = MaternField(grid_c, μ_lnk, σ_lnk, l_lnk)
 
@@ -174,21 +174,8 @@ e_dist = MvNormal(μ_e, C_e)
 d_obs = read_obs()
 
 # ----------------
-# POD
-# ----------------
-
-# Generate POD basis 
-# μ_pi, V_ri = generate_pod_data(grid_c, model_c, pr, 100, 0.999, "pod/grid_$(grid_c.nx)")
-μ_pi, V_ri = read_pod_data("pod/grid_$(grid_c.nx)")
-
-model_r = ReducedOrderModel(
-    grid_c, ϕ, μ, c, p0, wells_c, well_change_times,
-    x_wells, y_wells, t_obs, t_preds, μ_pi, V_ri, μ_e, C_e
-)
-
-# ----------------
 # Model functions
 # ----------------
 
-F(u::AbstractVector) = solve(grid_c, model_r, u)
+F(u::AbstractVector) = solve(grid_c, model_c, u)
 G(p::AbstractVector) = model_c.B_obs * p

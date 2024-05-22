@@ -48,10 +48,7 @@ struct Well
 end
 
 
-abstract type AbstractModel end
-
-
-struct Model <: AbstractModel
+struct Model
 
     ϕ::Real
     μ::Real
@@ -99,84 +96,6 @@ struct Model <: AbstractModel
             ϕ, μ, c, p0, Q, 
             B_obs, B_preds, B_wells, 
             n_obs, n_preds, n_wells
-        )
-
-    end
-
-end
-
-
-struct ReducedOrderModel <: AbstractModel
-
-    ϕ::Real
-    μ::Real
-    c::Real
-    p0::Real
-
-    Q::SparseMatrixCSC
-    B_obs::SparseMatrixCSC
-    B_preds::SparseMatrixCSC
-    B_wells::SparseMatrixCSC
-    BV_r::SparseMatrixCSC
-
-    μ_pi::AbstractVector
-    V_ri::AbstractMatrix
-    
-    μ_e::AbstractVector
-    C_e::AbstractMatrix 
-    C_e_inv::AbstractMatrix
-    L_e::AbstractMatrix
-
-    np_r::Int
-    n_obs::Int
-    n_preds::Int
-    n_wells::Int
-
-    function ReducedOrderModel(
-        g::Grid,
-        ϕ::Real, 
-        μ::Real, 
-        c::Real, 
-        p0::Real,
-        wells::AbstractVector{Well},
-        well_change_times::AbstractVector,
-        x_wells::AbstractVector,
-        y_wells::AbstractVector,
-        t_obs::AbstractVector,
-        t_preds::AbstractVector,
-        μ_pi::AbstractVector,
-        V_ri::AbstractMatrix,
-        μ_e::AbstractVector,
-        C_e::AbstractMatrix
-    )
-
-        np_r = size(V_ri, 2)
-        n_wells = length(x_wells)
-        n_obs = n_wells * length(t_obs)
-        n_preds = n_wells * length(t_preds)
-
-        t_obs_inds = [findfirst(g.ts .>= t-1e-8) for t ∈ t_obs]
-        t_pred_inds = [findfirst(g.ts .>= t-1e-8) for t ∈ t_preds]
-
-        Q = build_Q(g, wells, well_change_times)
-
-        B_obs, B_preds, B_wells = build_Bs(
-            g, n_wells, n_obs, n_preds, 
-            x_wells, y_wells, t_obs_inds, t_pred_inds
-        )
-
-        V_r = sparse(kron(sparse(I, g.nt, g.nt), V_ri))
-        BV_r = B_obs * V_r
-
-        C_e_inv = Hermitian(inv(C_e))
-        L_e = cholesky(C_e_inv).U
-
-        return new(
-            ϕ, μ, c, p0, 
-            Q, B_obs, B_preds, B_wells, BV_r, 
-            μ_pi, V_ri, 
-            μ_e, C_e, C_e_inv, L_e,
-            np_r, n_obs, n_preds, n_wells
         )
 
     end
