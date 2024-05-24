@@ -21,6 +21,7 @@ struct GNResult
 
 end
 
+
 function J(
     ω::AbstractVector, 
     p::AbstractVector,
@@ -33,6 +34,7 @@ function J(
     return 0.5 * res' * C_e_inv * res + 0.5 * sum(ω.^2)
 
 end
+
 
 function compute_∂Ap∂u(
     u::AbstractVector, 
@@ -51,6 +53,7 @@ function compute_∂Ap∂u(
     return ∂Au∂u
 
 end
+
 
 function solve_forward(
     Au::AbstractMatrix,
@@ -71,6 +74,7 @@ function solve_forward(
     return vec(p)
 
 end
+
 
 function solve_adjoint(
     p::AbstractVector, 
@@ -97,6 +101,7 @@ function solve_adjoint(
 
 end
 
+
 function compute_∂Ax∂ωtx(
     ∂Ax∂u::AbstractMatrix, 
     x::AbstractVector,
@@ -106,6 +111,7 @@ function compute_∂Ax∂ωtx(
     return (∂Ax∂u * pr.vs * spdiagm(sqrt.(pr.λs)))' * x
 
 end
+
 
 function compute_∂Ax∂ωx(
     ∂Ax∂u::AbstractMatrix, 
@@ -117,6 +123,7 @@ function compute_∂Ax∂ωx(
 
 end
 
+
 function compute_∇Lω(
     ∂Ap∂u::AbstractMatrix,
     ω::AbstractVector,
@@ -127,6 +134,7 @@ function compute_∇Lω(
     return ω + compute_∂Ax∂ωtx(∂Ap∂u, λ, pr)
 
 end
+
 
 function solve_forward_inc(
     Au::AbstractMatrix,
@@ -148,6 +156,7 @@ function solve_forward_inc(
     return vec(p)
 
 end
+
 
 function solve_adjoint_inc(
     Au::AbstractMatrix,
@@ -171,6 +180,7 @@ function solve_adjoint_inc(
 
 end
 
+
 function compute_Hmx(
     x::AbstractVector,
     Au::AbstractMatrix, 
@@ -192,6 +202,7 @@ function compute_Hmx(
 
 end
 
+
 function compute_Hx(
     x::AbstractVector,
     Au::AbstractMatrix, 
@@ -205,6 +216,7 @@ function compute_Hx(
     return compute_Hmx(x, Au, ∂Ap∂u, g, m, pr, C_e_inv) + x
 
 end
+
 
 function solve_cg(
     Au::AbstractMatrix,
@@ -251,6 +263,7 @@ function solve_cg(
     end
 
 end
+
 
 function linesearch(
     ω_c::AbstractVector, 
@@ -300,6 +313,7 @@ function linesearch(
     return ω_k, p_k, i
 
 end
+
 
 function compute_map(
     g::Grid,
@@ -363,6 +377,7 @@ function compute_map(
     end
 
 end
+
 
 function compute_local_lin(
     g::Grid,
