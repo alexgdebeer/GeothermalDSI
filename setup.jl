@@ -5,7 +5,7 @@ using Random: seed!
 
 include("DarcyFlow/DarcyFlow.jl")
 
-seed!(16)
+seed!(1)
 
 FILE_TRUTH = "data/truth.h5"
 
@@ -26,9 +26,9 @@ xmax = 1000.0
 tmax = 160.0
 
 Δx_c = 20.0
-Δx_f = 10.0
+Δx_f = 12.5
 Δt_c = 4.0
-Δt_f = 2.0
+Δt_f = 4.0
 
 n_wells = 9
 well_centres = [
@@ -39,8 +39,8 @@ well_centres = [
 
 x_wells = [c[1] for c ∈ well_centres]
 y_wells = [c[2] for c ∈ well_centres]
-t_obs = [0, 8, 16, 24, 32, 40, 48, 56, 64]
-t_preds = 68:4:160
+t_obs = [8, 16, 24, 32, 40, 48, 56, 64, 72, 80]
+t_preds = 84:4:160
 
 grid_c = Grid(xmax, tmax, Δx_c, Δt_c)
 grid_f = Grid(xmax, tmax, Δx_f, Δt_f)
@@ -53,7 +53,7 @@ q_c = 50.0 / Δx_c^2                 # Extraction rate, (m^3 / day) / m^3
 q_f = 50.0 / Δx_f^2                 # Extraction rate, (m^3 / day) / m^3
 
 well_radius = 50.0
-well_change_times = [0, 40, 80, 120]
+well_change_times = [0, 44, 84, 124]
 
 well_rates_c = [
     (-q_c, 0, 0, -0.5q_c), (0, -q_c, 0, -0.5q_c), (-q_c, 0, 0, -0.5q_c),
@@ -98,26 +98,26 @@ function generate_truth(
 )
 
     true_field = MaternField(g, μ, σ, l)
-    θ_t = vec(rand(true_field))
-    u_t = transform(true_field, θ_t)
+    ω_t = vec(rand(true_field))
+    u_t = transform(true_field, ω_t)
     F_t = solve(g, m, u_t)
     G_t = m.B_obs * F_t
 
-    h5write(FILE_TRUTH, "θ_t", θ_t)
+    h5write(FILE_TRUTH, "ω_t", ω_t)
     h5write(FILE_TRUTH, "u_t", u_t)
     h5write(FILE_TRUTH, "F_t", F_t)
     h5write(FILE_TRUTH, "G_t", G_t)
 
-    return θ_t, u_t, F_t, G_t
+    return ω_t, u_t, F_t, G_t
 
 end
 
 function generate_obs(
     G_t::AbstractVector, 
-    C_ϵ::AbstractMatrix
+    C_e::AbstractMatrix
 )
 
-    d_obs = G_t + rand(MvNormal(C_ϵ)) 
+    d_obs = G_t + rand(MvNormal(C_e)) 
     h5write(FILE_TRUTH, "d_obs", d_obs)
 
     return d_obs
@@ -127,13 +127,13 @@ end
 function read_truth()
 
     f = h5open(FILE_TRUTH)
-    θ_t = f["θ_t"][:]
+    ω_t = f["ω_t"][:]
     u_t = f["u_t"][:]
     F_t = f["F_t"][:]
     G_t = f["G_t"][:]
     close(f)
 
-    return θ_t, u_t, F_t, G_t
+    return ω_t, u_t, F_t, G_t
 
 end
 
@@ -152,7 +152,7 @@ end
 # ----------------
 
 μ_lnk = -31.0
-σ_lnk = 1.0
+σ_lnk = 0.75
 l_lnk = 250.0
 
 pr = MaternField(grid_c, μ_lnk, σ_lnk, l_lnk)
@@ -168,8 +168,8 @@ e_dist = MvNormal(μ_e, C_e)
 # Truth and observations
 # ----------------
 
-# θ_t, u_t, F_t, G_t = generate_truth(grid_f, model_f, μ_lnk, σ_lnk, l_lnk)
-θ_t, u_t, F_t, G_t = read_truth()
+# ω_t, u_t, F_t, G_t = generate_truth(grid_f, model_f, μ_lnk, σ_lnk, l_lnk)
+ω_t, u_t, F_t, G_t = read_truth()
 
 # d_obs = generate_obs(G_t, C_e)
 d_obs = read_obs()
