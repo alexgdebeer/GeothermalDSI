@@ -31,7 +31,7 @@ struct MaternField
         C += 1e-8I
 
         # Compute eigenvalues and eigenvectors
-        @time eigendecomp = eigen(C, sortby=(λ)->(-λ))
+        eigendecomp = eigen(C, sortby=(λ)->(-λ))
         λs = eigendecomp.values[1:Nω]
         vs = eigendecomp.vectors[:, 1:Nω]
 
