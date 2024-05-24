@@ -1,6 +1,3 @@
-UNIT_NORM = Normal()
-
-
 function run_chain(
     F::Function,
     G::Function,
@@ -23,17 +20,17 @@ function run_chain(
     logpost(ω, G) = logpri(ω) + loglik(G)
 
     ωs = Matrix{Float64}(undef, pr.Nω, Nb)
-    θs = Matrix{Float64}(undef, pr.Nθ, Nb)
+    us = Matrix{Float64}(undef, pr.Nθ, Nb)
     Fs = Matrix{Float64}(undef, NF, Nb)
     Gs = Matrix{Float64}(undef, NG, Nb)
     τs = Vector{Float64}(undef, Nb)
 
     α = 0
 
-    θ0 = transform(pr, ω0)
+    u0 = transform(pr, ω0)
 
     ωs[:, 1] = ω0
-    θs[:, 1] = θ0
+    us[:, 1] = u0
 
     Fs[:, 1] = F(θ0)
     Gs[:, 1] = G(Fs[:, 1])
@@ -48,8 +45,8 @@ function run_chain(
 
         ζ = rand(UNIT_NORM, pr.Nω)
         ω_p = √(1-β^2) * ωs[:, ind_c] + β*ζ
-        θ_p = transform(pr, ω_p)
-        F_p = F(θ_p)
+        u_p = transform(pr, ω_p)
+        F_p = F(u_p)
         G_p = G(F_p)
 
         h = exp(loglik(G_p) - loglik(Gs[:, ind_c]))
@@ -57,12 +54,12 @@ function run_chain(
         if h ≥ rand()
             α += 1
             ωs[:, ind_p] = ω_p
-            θs[:, ind_p] = θ_p
+            us[:, ind_p] = u_p
             Fs[:, ind_p] = F_p
             Gs[:, ind_p] = G_p
         else
             ωs[:, ind_p] = ωs[:, ind_c]
-            θs[:, ind_p] = θs[:, ind_c]
+            us[:, ind_p] = us[:, ind_c]
             Fs[:, ind_p] = Fs[:, ind_c]
             Gs[:, ind_p] = Gs[:, ind_c]
         end
@@ -71,9 +68,9 @@ function run_chain(
 
         if (i+1) % Nb == 0
 
-            h5write("data/pcn/chain_$n_chain.h5", "ωs_$n_chunk", ωs[:, 1:thin:end])
-            h5write("data/pcn/chain_$n_chain.h5", "θs_$n_chunk", θs[:, 1:thin:end])
-            h5write("data/pcn/chain_$n_chain.h5", "τs_$n_chunk", τs[:, 1:thin:end])
+            h5write("data/pcn2/chain_$n_chain.h5", "ωs_$n_chunk", ωs[:, 1:thin:end])
+            h5write("data/pcn2/chain_$n_chain.h5", "us_$n_chunk", us[:, 1:thin:end])
+            h5write("data/pcn2/chain_$n_chain.h5", "τs_$n_chunk", τs[:, 1:thin:end])
 
             GC.gc()
 

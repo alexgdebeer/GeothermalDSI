@@ -4,8 +4,6 @@ const CG_MAX_ITS = 30
 const LS_C = 1e-4
 const LS_MAX_ITS = 20
 
-const UNIT_NORM = Normal()
-
 
 struct GNResult
 
