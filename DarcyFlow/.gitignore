@@ -1,8 +1,0 @@
-Manifest.toml
-.DS_Store
-
-data/
-plots/
-
-test*
-plot*
