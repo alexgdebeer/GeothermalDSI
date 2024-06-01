@@ -1,7 +1,8 @@
 function run_dsi(
     Xs::AbstractMatrix, 
     Ys::AbstractMatrix,
-    x_obs::AbstractVector;
+    x_obs::AbstractVector,
+    C_e::AbstractMatrix;
     jitter::Bool=true
 )
 
@@ -15,8 +16,8 @@ function run_dsi(
     C_yy = C_joint[Nx+1:end, Nx+1:end]
     C_yx = C_joint[Nx+1:end, 1:Nx]
 
-    m_post = m_y + C_yx * (C_xx \ (x_obs - m_x))
-    C_post = C_yy - C_yx * (C_xx \ C_yx')
+    m_post = m_y + C_yx * ((C_xx + C_e) \ (x_obs - m_x))
+    C_post = C_yy - C_yx * ((C_xx + C_e) \ C_yx')
     C_post = Hermitian(C_post)
 
     if jitter

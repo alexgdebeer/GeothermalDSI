@@ -32,7 +32,7 @@ function run_chain(
     ωs[:, 1] = ω0
     us[:, 1] = u0
 
-    Fs[:, 1] = F(θ0)
+    Fs[:, 1] = F(u0)
     Gs[:, 1] = G(Fs[:, 1])
     τs[1] = logpost(ω0, Gs[:, 1])
 
