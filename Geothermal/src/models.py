@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from copy import deepcopy
 from enum import Enum
 from itertools import product
@@ -10,8 +10,6 @@ import layermesh.mesh as lm
 import numpy as np
 import pyvista as pv
 import pywaiwera
-from scipy import stats
-from scipy.spatial import Delaunay
 import yaml
 
 from src import utils
@@ -21,23 +19,10 @@ from src.consts import *
 EPS = 1e-8
 
 
-def gauss_to_unif(x, lb, ub):
-    return lb + stats.norm.cdf(x) * (ub - lb)
-
-def transform_pars(pars, bounds):
-
-    if len(pars) != len(bounds):
-        raise Exception("Number of parameters != number of bounds")
-    
-    pars_trans = [
-        gauss_to_unif(par, *bound) 
-        for par, bound in zip(pars, bounds)]
-
-    return pars_trans
-
 class ExitFlag(Enum):
     SUCCESS = 1
     FAILURE = 2
+
 
 class Mesh():
 
@@ -48,19 +33,24 @@ class Mesh():
 
         self.cell_centres = [c.centre for c in self.m.cell]
         self.col_centres = [c.centre for c in self.m.column]
-        self.tri = Delaunay(self.cell_centres)
         
         self.col_cells = {
             col.index: [c.index for c in col.cell] 
             for col in self.m.column}
         
         self.fem_mesh = pv.UnstructuredGrid(f"{self.name}.vtu")
-        self.fem_mesh = self.fem_mesh.triangulate()
+
+        centers = self.fem_mesh.cell_centers().points
+        self.mesh_mapping = np.array([self.m.find(p, indices=True) 
+                                      for p in centers])
+        # self.fem_mesh = self.fem_mesh.triangulate()
+
 
 class MassUpflow():
     def __init__(self, cell: lm.cell, rate: float):
         self.cell = cell
         self.rate = rate
+
 
 class Well():
     
@@ -78,85 +68,45 @@ class Well():
         self.feedzone_cell = mesh.m.find((x, y, feedzone_depth))
         self.feedzone_rate = feedzone_rate
 
+
 class PermField():
 
-    def __init__(self, mesh, grf, bounds, level_func):
+    def __init__(self, std, grf, level_func):
 
-        self.mesh = mesh
+        self.std = std
         self.grf = grf
-
-        self.bounds = bounds
         self.level_func = level_func
-
-        self.n_hyperparams = len(self.bounds)
-        self.n_params = self.n_hyperparams + self.mesh.fem_mesh.n_points
-
-    def convert_hyperparams(self, hps):
-        return [gauss_to_unif(hp, *bnds) 
-                for hp, bnds in zip(hps, self.bounds)]
-
-    def get_perms(self, ps):
-        """Returns the set of permeabilities that correspond to a given 
-        set of (whitened) parameters."""
-
-        hyperparams, W = ps[:self.n_hyperparams], ps[self.n_hyperparams:]
-        hyperparams = self.convert_hyperparams(hyperparams)
-        
-        X = self.grf.generate_field(W, *hyperparams)
-        return self.grf.G @ X
-        
-    def get_hyperparams(self, ws):
-        return self.convert_hyperparams(ws[:self.n_hyperparams])
+        self.n_params = len(self.grf.points)
 
     def level_set(self, perms):
+        """Applies the level set function to a draw from a GRF."""
+
         return np.array([self.level_func(p) for p in perms])
+    
+    def sample(self):
+        """Generates a random sample of permeabilities."""
+
+        ws = np.random.normal(size=self.n_params)
+        perms = self.level_set(self.std * self.grf.transform(ws))
+        return perms
+
 
 class UpflowField():
 
-    def __init__(self, mesh, grf, mu, bounds):
+    def __init__(self, mu, std, grf):
 
-        self.mesh = mesh 
+        self.mu = mu
+        self.std = std
         self.grf = grf
 
-        self.mu = mu 
-        self.bounds = bounds 
+        self.n_params = self.grf.points.shape[0]
 
-        self.n_hyperps = len(bounds)
-        self.n_params = self.n_hyperps + self.mesh.m.num_columns
+    def sample(self):
+        """Generates a random set of upflows."""
 
-    def get_upflows(self, params):
-        """Returns the set of upflows that correspond to a given set of 
-        (whitened) parameters."""
+        ws = np.random.normal(size=self.n_params)
+        return self.mu + self.std * self.grf.transform(ws)
 
-        hyperparams, W = params[:self.n_hyperps], params[self.n_hyperps:]
-        hyperparams = [gauss_to_unif(p, *bnds) 
-                       for p, bnds in zip(hyperparams, self.bounds)]
-        
-        X = self.grf.generate_field(W, *hyperparams)
-        return self.mu + X
-
-class Channel():
-    
-    def __init__(self, mesh, bounds):
-        
-        self.mesh = mesh
-        self.bounds = bounds
-
-        self.n_params = 5
-
-    def get_cells_in_channel(self, pars):
-        """Returns the indices of the columns that are contained within 
-        the channel specified by a given set of parameters."""
-        
-        def in_channel(x, y, a1, a2, a3, a4, a5):
-            ub = a1 * np.sin(2*np.pi*x/a2) + np.tan(a3)*x + a4 
-            return ub-a5 <= y <= ub+a5 
-
-        pars = [gauss_to_unif(p, *self.bounds[i]) for i, p in enumerate(pars)]
-
-        cols = [col for col in self.mesh.m.column if in_channel(*col.centre, *pars)]
-        cells = [cell for col in cols for cell in col.cell]
-        return cells, cols
 
 class Fault():
 
@@ -166,25 +116,27 @@ class Fault():
         self.x0 = self.mesh.m.bounds[0][0]
         self.x1 = self.mesh.m.bounds[1][0]
         self.bounds = bounds
-        self.n_params = 2
+    
+    def sample(self):
+        """Samples a set of fault cells / columns."""
 
-    def get_cells_in_fault(self, pars):
-        """Returns the cells and columns contained within the fault 
-        specified by a given set of parameters."""
+        y0 = np.random.uniform(*self.bounds[0])
+        y1 = np.random.uniform(*self.bounds[1])
 
-        pars = transform_pars(pars, self.bounds)
-
-        fault_line = [[self.x0, pars[0]], [self.x1, pars[1]]]
-        cols = self.mesh.m.column_track(fault_line)
+        cols = self.mesh.m.column_track([[self.x0, y0], [self.x1, y1]])
         cols = [c[0] for c in cols]
-        
+
         cells = [cell for col in cols for cell in col.cell]
-        return cells, cols
+
+        col_inds = [col.index for col in cols]
+        cell_inds = [cell.index for cell in cells]
+
+        return cell_inds, col_inds
+
 
 class ClayCap():
 
-    def __init__(self, mesh: Mesh, 
-                 bounds, n_terms, coef_sds):
+    def __init__(self, mesh: Mesh, bounds, n_terms, coef_sds):
         
         self.cell_centres = np.array([c.centre for c in mesh.m.cell])
         self.col_centres = np.array([c.centre for c in mesh.m.column])
@@ -195,7 +147,8 @@ class ClayCap():
         self.bounds = bounds 
         self.n_terms = n_terms 
         self.coef_sds = coef_sds
-        self.n_params = len(bounds) + 4 * self.n_terms ** 2
+        self.coefs_shape = (self.n_terms, self.n_terms, 4)
+        self.n_coefs = 4 * self.n_terms ** 2
 
     def cartesian_to_spherical(self, ds):
 
@@ -209,7 +162,8 @@ class ClayCap():
         """Computes the radius of the clay cap in the direction of each 
         cell, by taking the radius of the (deformed) ellipse that forms 
         the base of the cap, then adding the randomised Fourier series 
-        to it."""
+        to it.
+        """
 
         rs = np.sqrt(((np.sin(phis) * np.cos(thetas) / width_h)**2
                        + (np.sin(phis) * np.sin(thetas) / width_h)**2
@@ -223,24 +177,19 @@ class ClayCap():
                    + coefs[n, m, 3] * np.sin(n * thetas) * np.sin(m * phis))
         
         return rs
-    
-    def get_cap_params(self, pars):
-        """Given a set of unit normal variables, generates the 
-        corresponding set of clay cap parameters."""
 
-        geom = transform_pars(pars[:4], self.bounds)
-
-        coefs_shape = (self.n_terms, self.n_terms, 4)
-        coefs = np.reshape(self.coef_sds * pars[4:], coefs_shape)
-
-        return geom, coefs
-
-    def get_cells_in_cap(self, pars):
+    def sample(self):
         """Returns an array of booleans that indicate whether each cell 
-        is contained within the clay cap."""
+        is contained within the clay cap.
+        """
 
-        geom, coefs = self.get_cap_params(pars)
-        cz, width_h, width_v, dip = geom
+        cz = np.random.uniform(*self.bounds[0])
+        width_h = np.random.uniform(*self.bounds[1])
+        width_v = np.random.uniform(*self.bounds[2])
+        dip = np.random.uniform(*self.bounds[3])
+
+        coefs = np.random.uniform(size=self.n_coefs)
+        coefs = np.reshape(self.coef_sds * coefs, self.coefs_shape)
 
         centre = np.array([self.cx, self.cy, cz])
         ds = self.cell_centres - centre
@@ -250,8 +199,9 @@ class ClayCap():
 
         cap_radii = self.compute_cap_radii(cell_phis, cell_thetas,
                                            width_h, width_v, coefs)
-        
-        return (cell_radii < cap_radii).nonzero()[0]
+
+        return np.where(cell_radii < cap_radii)
+
 
 class Model(ABC):
     """Base class for models, with a set of default methods."""
@@ -282,9 +232,17 @@ class Model(ABC):
         self.generate_ns()
         self.generate_pr()
 
-    @abstractmethod
     def initialise_ns_model(self):
-        pass
+        
+        self.ns_model = {
+            "eos": {"name": "we"},
+            "gravity": GRAVITY,
+            "logfile": {"echo": False},
+            "mesh": {
+                "filename": f"{self.mesh.name}.msh"
+            },
+            "title": "3D Model"
+        }
 
     def add_boundaries(self):
         """Adds an atmospheric boundary condition to the top of the 
@@ -520,35 +478,6 @@ class Model(ABC):
 
         return F_i
 
-class Model2D(Model):
-    """2D Model (note: can currently only be used with a RegularMesh)."""
-
-    def initialise_ns_model(self):
-        
-        self.ns_model = {
-            "eos": {"name": "we"},
-            "gravity": GRAVITY,
-            "logfile": {"echo": False},
-            "mesh": {
-                "filename": f"{self.mesh.name}.msh", 
-                "thickness": self.mesh.dy
-            },
-            "title": "2D Model"
-        }
-
-class Model3D(Model):
-
-    def initialise_ns_model(self):
-        
-        self.ns_model = {
-            "eos": {"name": "we"},
-            "gravity": GRAVITY,
-            "logfile": {"echo": False},
-            "mesh": {
-                "filename": f"{self.mesh.name}.msh"
-            },
-            "title": "3D Model"
-        }
 
 class Ensemble():
 
