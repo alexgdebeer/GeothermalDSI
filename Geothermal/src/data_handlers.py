@@ -8,14 +8,16 @@ from src.models import *
 
 class DataHandler(ABC):
 
-    def __init__(self, mesh: Mesh, wells, temp_obs_cs,
-                 prod_obs_ts, tmax, nt):
+    def __init__(self, mesh: Mesh, wells, n_wells, n_cur_wells, 
+                 temp_obs_cs, prod_obs_ts, tmax, nt):
 
         self.mesh = mesh
         self.cell_cs = np.array([c.centre for c in mesh.m.cell])
 
         self.wells = wells
-        self.n_wells = len(wells)
+        self.n_wells = n_wells
+        self.n_cur_wells = n_cur_wells
+
         self.feedzone_coords = np.array([w.feedzone_cell.centre for w in wells])
 
         self.tmax = tmax 
@@ -33,8 +35,8 @@ class DataHandler(ABC):
         self.n_enth_full = (self.nt+1) * self.n_wells
 
         self.n_temp_obs = len(self.temp_obs_cs)
-        self.n_pres_obs = self.n_prod_obs_ts * self.n_wells
-        self.n_enth_obs = self.n_prod_obs_ts * self.n_wells
+        self.n_pres_obs = self.n_prod_obs_ts * self.n_cur_wells
+        self.n_enth_obs = self.n_prod_obs_ts * self.n_cur_wells
 
         self.generate_inds_full()
         self.generate_inds_obs()
@@ -57,10 +59,11 @@ class DataHandler(ABC):
         """Reshapes a 1D array of observations such that each column 
         contains the observations for a single well."""
         return np.reshape(obs, (-1, self.n_wells))
-
-    @abstractmethod
-    def get_full_temperatures(self, F_i):
-        raise NotImplementedError()
+    
+    def reshape_to_cur_wells(self, obs):
+        """Reshapes a 1D array of observations such that each column 
+        contains the observations for a single well."""
+        return np.reshape(obs, (-1, self.n_cur_wells))
     
     def get_full_pressures(self, F_i):
         pres = F_i[self.inds_full_pres]
@@ -77,10 +80,10 @@ class DataHandler(ABC):
         return temp, pres, enth 
     
     def get_obs_pressures(self, pres_full):
-        return pres_full[self.inds_prod_obs, :]
+        return pres_full[self.inds_prod_obs, :self.n_cur_wells]
 
     def get_obs_enthalpies(self, enth_full):
-        return enth_full[self.inds_prod_obs, :]
+        return enth_full[self.inds_prod_obs, :self.n_cur_wells]
     
     def get_obs_states(self, F_i):
         """Extracts the observations from a complete vector of model 
@@ -103,9 +106,9 @@ class DataHandler(ABC):
     def split_obs(self, G_i):
         """Splits a set of observations into temperatures, pressures 
         and enthalpies."""
-        temp_obs = self.reshape_to_wells(G_i[self.inds_obs_temp])
-        pres_obs = self.reshape_to_wells(G_i[self.inds_obs_pres])
-        enth_obs = self.reshape_to_wells(G_i[self.inds_obs_enth])
+        temp_obs = self.reshape_to_cur_wells(G_i[self.inds_obs_temp])
+        pres_obs = self.reshape_to_cur_wells(G_i[self.inds_obs_pres])
+        enth_obs = self.reshape_to_cur_wells(G_i[self.inds_obs_enth])
         return temp_obs, pres_obs, enth_obs
     
     def get_full_temperatures(self, F_i):
@@ -117,7 +120,7 @@ class DataHandler(ABC):
         full set of temperatures."""
         interp = LinearNDInterpolator(self.mesh.tri, temp_full)
         temp_obs = interp(self.temp_obs_cs)
-        return self.reshape_to_wells(temp_obs)
+        return self.reshape_to_cur_wells(temp_obs)
 
     def downhole_temps(self, temp_full, well_num):
         """Returns interpolated temperatures down a single well."""

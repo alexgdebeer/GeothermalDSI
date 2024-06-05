@@ -43,7 +43,6 @@ class Mesh():
         centers = self.fem_mesh.cell_centers().points
         self.mesh_mapping = np.array([self.m.find(p, indices=True) 
                                       for p in centers])
-        # self.fem_mesh = self.fem_mesh.triangulate()
 
 
 class MassUpflow():
