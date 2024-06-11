@@ -10,6 +10,7 @@ import layermesh.mesh as lm
 import numpy as np
 import pyvista as pv
 import pywaiwera
+from scipy.spatial import Delaunay
 import yaml
 
 from src import utils
@@ -33,6 +34,7 @@ class Mesh():
 
         self.cell_centres = [c.centre for c in self.m.cell]
         self.col_centres = [c.centre for c in self.m.column]
+        self.tri = Delaunay(self.cell_centres)
         
         self.col_cells = {
             col.index: [c.index for c in col.cell] 
