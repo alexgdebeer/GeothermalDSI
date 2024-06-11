@@ -69,15 +69,13 @@ def get_pr_data(pr_path, feedzone_cell_inds, n_feedzones):
 
 if __name__ == "__main__":
     
-    Ne = 996
+    Ne = 1000
 
     feedzone_cell_inds = np.array([w.feedzone_cell.index for w in wells_crse])
     n_feedzones = len(well_centres)
 
-    Fs = np.zeros((NF, Ne))
-    Gs = np.zeros((NG, Ne))
-    inds_succ = []
-    inds_fail = []
+    Fs = []
+    Gs = []
 
     for i in range(Ne):
         
@@ -86,12 +84,15 @@ if __name__ == "__main__":
 
         flag = get_status(ns_path, pr_path)
         print(f"{i}: {flag}")
+
         if flag == ExitFlag.SUCCESS:
-            Fs[:, i] = get_pr_data(pr_path, feedzone_cell_inds, n_feedzones)
-            Gs[:, i] = data_handler_crse.get_obs(Fs[:, i])
-            inds_succ.append(i)
-        else: 
-            inds_fail.append(i)
-    
+            F_i = get_pr_data(pr_path, feedzone_cell_inds, n_feedzones)
+            G_i = data_handler_crse.get_obs(F_i)
+            Fs.append(F_i)
+            Gs.append(G_i)
+
+    Fs = np.hstack([F_i[:, np.newaxis] for F_i in Fs])
+    Gs = np.hstack([G_i[:, np.newaxis] for G_i in Gs])
+
     np.save("data/Fs", Fs)
     np.save("data/Gs", Gs)
