@@ -468,12 +468,18 @@ class Model(ABC):
             enth = f["source_fields"]["source_enthalpy"]
 
             ns_temp = np.array(temp[0][cell_inds])
-            pr_pres = np.array([p[cell_inds][self.feedzone_cell_inds]
-                                for p in pres]) / 1e6
-            pr_enth = np.array([e[src_inds][-self.n_feedzones:]
-                                for e in enth]) / 1e3
+            
+            pr_temp = [t[cell_inds][self.feedzone_cell_inds] for t in temp]
+            pr_temp = np.array(pr_temp)
+            
+            pr_pres = [p[cell_inds][self.feedzone_cell_inds] for p in pres]
+            pr_pres = np.array(pr_pres) / 1e6
+
+            pr_enth = [e[src_inds][-self.n_feedzones:] for e in enth]
+            pr_enth = np.array(pr_enth) / 1e3
 
         F_i = np.concatenate((ns_temp.flatten(),
+                              pr_temp.flatten(),
                               pr_pres.flatten(),
                               pr_enth.flatten()))
 

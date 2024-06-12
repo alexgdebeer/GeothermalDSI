@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
 
@@ -6,7 +5,7 @@ from src.consts import *
 from src.models import *
 
 
-class DataHandler(ABC):
+class DataHandler():
 
     def __init__(self, mesh: Mesh, wells, n_wells, n_cur_wells, 
                  temp_obs_cs, prod_obs_ts, tmax, nt):
@@ -30,11 +29,14 @@ class DataHandler(ABC):
         self.inds_prod_obs = np.searchsorted(self.ts, prod_obs_ts-EPS)
         self.n_prod_obs_ts = len(self.prod_obs_ts)
 
-        self.n_temp_full = self.mesh.m.num_cells
+        self.n_ns_temp_full = self.mesh.m.num_cells
+
+        self.n_temp_full = (self.nt+1) * self.n_wells
         self.n_pres_full = (self.nt+1) * self.n_wells
         self.n_enth_full = (self.nt+1) * self.n_wells
 
         self.n_temp_obs = len(self.temp_obs_cs)
+
         self.n_pres_obs = self.n_prod_obs_ts * self.n_cur_wells
         self.n_enth_obs = self.n_prod_obs_ts * self.n_cur_wells
 
@@ -43,28 +45,45 @@ class DataHandler(ABC):
 
     def generate_inds_full(self):
         """Generates indices used to extract temperatures, pressures 
-        and enthalpies from a vector of complete data."""
-        self.inds_full_temp = np.arange(self.n_temp_full)
+        and enthalpies from a vector of complete data.
+        """
+        
+        self.inds_full_ns_temp = np.arange(self.n_temp_full)
+        self.inds_full_temp = np.arange(self.n_temp_full) + 1 + self.inds_full_temp_ns[-1]
         self.inds_full_pres = np.arange(self.n_pres_full) + 1 + self.inds_full_temp[-1]
         self.inds_full_enth = np.arange(self.n_enth_full) + 1 + self.inds_full_pres[-1]
 
     def generate_inds_obs(self):
         """Generates indices used to extract temperatures, pressures 
-        and enthalpy observations from a vector of observations."""
+        and enthalpy observations from a vector of observations.
+        """
+        
         self.inds_obs_temp = np.arange(self.n_temp_obs)
         self.inds_obs_pres = np.arange(self.n_pres_obs) + 1 + self.inds_obs_temp[-1]
         self.inds_obs_enth = np.arange(self.n_enth_obs) + 1 + self.inds_obs_pres[-1]
 
     def reshape_to_wells(self, obs):
         """Reshapes a 1D array of observations such that each column 
-        contains the observations for a single well."""
+        contains the observations for a single well.
+        """
+        
         return np.reshape(obs, (-1, self.n_wells))
     
     def reshape_to_cur_wells(self, obs):
         """Reshapes a 1D array of observations such that each column 
-        contains the observations for a single well."""
+        contains the observations for a single well.
+        """
+        
         return np.reshape(obs, (-1, self.n_cur_wells))
     
+    def get_full_ns_temperatures(self, F_i):
+        temp = F_i[self.inds_full_ns_temp]
+        return temp
+
+    def get_full_temperatures(self, F_i):
+        temp = F_i[self.inds_full_temp]
+        return self.reshape_to_wells(temp)
+
     def get_full_pressures(self, F_i):
         pres = F_i[self.inds_full_pres]
         return self.reshape_to_wells(pres)
@@ -72,12 +91,22 @@ class DataHandler(ABC):
     def get_full_enthalpies(self, F_i):
         enth = F_i[self.inds_full_enth]
         return self.reshape_to_wells(enth)
-    
+
     def get_full_states(self, F_i):
+        ns_temp = self.get_full_ns_temperatures(F_i)
         temp = self.get_full_temperatures(F_i)
         pres = self.get_full_pressures(F_i)
         enth = self.get_full_enthalpies(F_i)
-        return temp, pres, enth 
+        return ns_temp, temp, pres, enth 
+    
+    def get_obs_temperatures(self, temp_full):
+        """Extracts the temperatures at each observation point from a 
+        full set of temperatures.
+        """
+        
+        interp = LinearNDInterpolator(self.mesh.tri, temp_full)
+        temp_obs = interp(self.temp_obs_cs)
+        return self.reshape_to_cur_wells(temp_obs)
     
     def get_obs_pressures(self, pres_full):
         return pres_full[self.inds_prod_obs, :self.n_cur_wells]
@@ -88,8 +117,8 @@ class DataHandler(ABC):
     def get_obs_states(self, F_i):
         """Extracts the observations from a complete vector of model 
         output, and returns each type of observation individually."""
-        temp_full, pres_full, enth_full = self.get_full_states(F_i)
-        temp_obs = self.get_obs_temperatures(temp_full)
+        ns_temp_full, _, pres_full, enth_full = self.get_full_states(F_i)
+        temp_obs = self.get_obs_temperatures(ns_temp_full)
         pres_obs = self.get_obs_pressures(pres_full)
         enth_obs = self.get_obs_enthalpies(enth_full)
         return temp_obs, pres_obs, enth_obs
@@ -105,22 +134,13 @@ class DataHandler(ABC):
 
     def split_obs(self, G_i):
         """Splits a set of observations into temperatures, pressures 
-        and enthalpies."""
+        and enthalpies.
+        """
+        
         temp_obs = self.reshape_to_cur_wells(G_i[self.inds_obs_temp])
         pres_obs = self.reshape_to_cur_wells(G_i[self.inds_obs_pres])
         enth_obs = self.reshape_to_cur_wells(G_i[self.inds_obs_enth])
         return temp_obs, pres_obs, enth_obs
-    
-    def get_full_temperatures(self, F_i):
-        temp = F_i[self.inds_full_temp]
-        return temp
-
-    def get_obs_temperatures(self, temp_full):
-        """Extracts the temperatures at each observation point from a 
-        full set of temperatures."""
-        interp = LinearNDInterpolator(self.mesh.tri, temp_full)
-        temp_obs = interp(self.temp_obs_cs)
-        return self.reshape_to_cur_wells(temp_obs)
 
     def downhole_temps(self, temp_full, well_num):
         """Returns interpolated temperatures down a single well."""
@@ -135,3 +155,32 @@ class DataHandler(ABC):
         interp = LinearNDInterpolator(self.mesh.tri, temp_full)
         downhole_temps = interp(coords)
         return elevs, downhole_temps
+    
+    def log_transform_pressures(self, F_i, eps=0.01):
+
+        pred_ind_0 = self.inds_prod_obs[-1]
+        pres = self.get_full_pressures(F_i)
+
+        n_pres, n_wells = pres.shape
+
+        for i in range(n_pres-1, pred_ind_0, -1):
+            for j in range(n_wells):
+                dp = pres[i-1, j] - pres[i, j]
+                pres[i, j] = np.log(dp + eps)
+        
+        F_i[self.inds_full_pres] = pres.flatten()
+        return F_i
+
+    def inv_transform_pressures(self, F_i, eps=0.01):
+
+        pred_ind_0 = self.inds_prod_obs[-1]
+        pres = self.get_full_pressures(F_i)
+
+        n_pres, n_wells = pres.shape
+
+        for i in range(pred_ind_0 + 1, n_pres):
+            for j in range(n_wells):
+                pres[i, j] = pres[i-1, j] - np.exp(pres[i, j]) + eps
+        
+        F_i[self.inds_full_pres] = pres.flatten()
+        return F_i
