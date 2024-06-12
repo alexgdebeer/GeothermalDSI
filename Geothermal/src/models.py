@@ -3,9 +3,7 @@ from copy import deepcopy
 from enum import Enum
 from itertools import product
 import os
-import subprocess
 
-import h5py
 import layermesh.mesh as lm
 import numpy as np
 import pyvista as pv
@@ -247,7 +245,8 @@ class Model(ABC):
 
     def add_boundaries(self):
         """Adds an atmospheric boundary condition to the top of the 
-        model (leaves the sides with no-flow conditions)."""
+        model (leaves the sides with no-flow conditions).
+        """
 
         self.ns_model["boundaries"] = [{
             "primary": [P_ATM, T_ATM], 
@@ -261,7 +260,8 @@ class Model(ABC):
     def add_upflows(self):
         """Adds the mass upflows to the base of the model. Where there 
         are no mass upflows, a background heat flux of constant 
-        magnitude is imposed."""
+        magnitude is imposed.
+        """
 
         upflow_cell_inds = [
             upflow.cell.index 
@@ -290,7 +290,8 @@ class Model(ABC):
     def add_rocktypes(self):
         """Adds rocks with given permeabilities (and constant porosity, 
         conductivity, density and specific heat) to the model. 
-        Permeabilities may be isotropic or anisotropic."""
+        Permeabilities may be isotropic or anisotropic.
+        """
         
         if len(self.perms) != self.mesh.m.num_cells:
             raise Exception("Incorrect number of permeabilities.")
@@ -308,7 +309,8 @@ class Model(ABC):
 
     def add_wells(self):
         """Adds wells with constant production / injection rates to the 
-        model."""
+        model.
+        """
 
         self.pr_model["source"].extend([{
             "component": "water",
@@ -320,7 +322,8 @@ class Model(ABC):
     def add_ns_incon(self):
         """Adds path to initial condition file to the model, if the 
         file exists. Otherwise, sets the entire model to a constant 
-        temperature and pressure."""
+        temperature and pressure.
+        """
 
         if os.path.isfile(f"{self.incon_path}.h5"):
             self.ns_model["initial"] = {"filename": f"{self.incon_path}.h5"}
@@ -329,7 +332,9 @@ class Model(ABC):
 
     def add_pr_incon(self):
         """Sets the production history initial condition to be the 
-        output file from the natural state run."""
+        output file from the natural state run.
+        """
+        
         self.pr_model["initial"] = {"filename": f"{self.ns_path}.h5"}
     
     def add_ns_timestepping(self):
@@ -359,7 +364,8 @@ class Model(ABC):
 
     def add_ns_output(self):
         """Sets up the natural state simulation such that it only saves 
-        the final model state."""
+        the final model state.
+        """
 
         self.ns_model["output"] = {
             "frequency": 0, 
@@ -417,7 +423,8 @@ class Model(ABC):
     @utils.timer
     def run(self):
         """Simulates the model and returns a flag that indicates 
-        whether the simulation was successful."""
+        whether the simulation was successful.
+        """
 
         self.delete_output_files()
 
@@ -453,144 +460,3 @@ class Model(ABC):
                 return ExitFlag.FAILURE
 
         raise Exception(f"Unknown exit condition. Check {log_path}.yaml.")
-
-    def get_pr_data(self):
-        """Returns the temperatures (deg C), pressures (MPa) and
-        enthalpies (kJ/kg) from a production history simulation."""
-
-        with h5py.File(f"{self.pr_path}.h5", "r") as f:
-        
-            cell_inds = f["cell_index"][:, 0]
-            src_inds = f["source_index"][:, 0]
-            
-            temp = f["cell_fields"]["fluid_temperature"]
-            pres = f["cell_fields"]["fluid_pressure"]
-            enth = f["source_fields"]["source_enthalpy"]
-
-            ns_temp = np.array(temp[0][cell_inds])
-            
-            pr_temp = [t[cell_inds][self.feedzone_cell_inds] for t in temp]
-            pr_temp = np.array(pr_temp)
-            
-            pr_pres = [p[cell_inds][self.feedzone_cell_inds] for p in pres]
-            pr_pres = np.array(pr_pres) / 1e6
-
-            pr_enth = [e[src_inds][-self.n_feedzones:] for e in enth]
-            pr_enth = np.array(pr_enth) / 1e3
-
-        F_i = np.concatenate((ns_temp.flatten(),
-                              pr_temp.flatten(),
-                              pr_pres.flatten(),
-                              pr_enth.flatten()))
-
-        return F_i
-
-
-class Ensemble():
-
-    def __init__(self, prior, generate_particle, get_result, 
-                 Np, NF, NG, Ne):
-
-        self.prior = prior
-        self.generate_particle = generate_particle
-        self.get_result = get_result
-
-        self.Np = Np 
-        self.NF = NF 
-        self.NG = NG
-        self.Ne = Ne
-
-    def transform_params(self, ws):
-        ps = np.empty((self.Np, self.Ne))
-        for i, w_i in enumerate(ws.T):
-            ps[:, i] = self.prior.transform(w_i)
-        return ps
-
-    def generate(self, ps):
-        self.ensemble = []
-        for i, p_i in enumerate(ps.T):
-            particle = self.generate_particle(p_i, i)
-            self.ensemble.append(particle)
-        return self.ensemble
-    
-    def get_results(self, inds_succ):
-        Fs = np.empty((self.NF, self.Ne))
-        Gs = np.empty((self.NG, self.Ne))
-        for i, particle in enumerate(self.ensemble):
-            if i in inds_succ:
-                F_i, G_i = self.get_result(particle)
-                Fs[:, i] = F_i 
-                Gs[:, i] = G_i 
-        return Fs, Gs
-
-    def run_local(self):
-
-        utils.info("Running locally...")
-
-        inds_succ = []
-        inds_fail = []
-
-        for i, particle in enumerate(self.ensemble):
-            if particle.run() == ExitFlag.FAILURE:
-                inds_fail.append(i)
-            else: 
-                inds_succ.append(i)
-
-        Fs, Gs = self.get_results(inds_succ)
-        return Fs, Gs, inds_succ, inds_fail
-    
-    @utils.timer
-    def run_nesi(self):
-        """Runs an ensemble using NeSI."""
-
-        def generate_cmd(paths):
-            cmd = ""
-            for path in paths:
-                cmd += f"srun {NESI_OPTIONS} {NESI_WAI_PATH} {path} & "
-            cmd += "wait"
-            return cmd
-
-        inds_succ_ns = []
-        inds_fail_ns = []
-        inds_succ = []
-        inds_fail = []
-        
-        ns_paths = [f"{p.ns_path}.json" for p in self.ensemble]
-        pr_paths = [f"{p.pr_path}.json" for p in self.ensemble]
-
-        ns_cmd = generate_cmd(ns_paths)
-        print(ns_cmd)
-        subprocess.run(ns_cmd, shell=True)
-
-        ns_flags = [p.get_exitflag(p.ns_path) for p in self.ensemble]
-        for i, flag in enumerate(ns_flags):
-            if flag == ExitFlag.SUCCESS:
-                inds_succ_ns.append(i)
-            else: 
-                inds_fail_ns.append(i)
-
-        pr_cmd = generate_cmd([pr_paths[i] for i in inds_succ_ns])
-        print(pr_cmd)
-        subprocess.run(pr_cmd, shell=True)
-
-        for i, p in enumerate(self.ensemble):
-            if i in inds_succ_ns:
-                if p.get_exitflag(p.pr_path) == ExitFlag.SUCCESS:
-                    inds_succ.append(i)
-                else: inds_fail.append(i)
-            else: inds_fail.append(i)
-
-        Fs, Gs = self.get_results(inds_succ)
-        return Fs, Gs, inds_succ, inds_fail
-
-    def run(self, ws, nesi):
-
-        ps = self.transform_params(ws)
-        self.generate(ps)
-        
-        if nesi: 
-            Fs, Gs, inds_succ, inds_fail = self.run_nesi()
-        else:
-            Fs, Gs, inds_succ, inds_fail = self.run_local()
-
-        return ps, Fs, Gs, inds_succ, inds_fail

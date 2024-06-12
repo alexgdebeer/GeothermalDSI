@@ -1,5 +1,4 @@
 from enum import Enum
-import h5py 
 
 from setup import *
 
@@ -10,8 +9,9 @@ class ExitFlag(Enum):
 
 
 def get_status(ns_path, pr_path):
-    """Simulates the model and returns a flag that indicates 
-    whether the simulation was successful."""
+    """Returns a flag that indicates whether a combined NS and PR 
+    simulation was successful.
+    """
     
     if (flag := get_exitflag(ns_path)) == ExitFlag.FAILURE: 
         return flag
@@ -20,7 +20,7 @@ def get_status(ns_path, pr_path):
 
 
 def get_exitflag(log_path):
-    """Determines the outcome of a simulation."""
+    """Determines the outcome of an NS or PR simulation."""
 
     with open(f"{log_path}.yaml", "r") as f:
         log = yaml.safe_load(f)
@@ -41,38 +41,9 @@ def get_exitflag(log_path):
     raise Exception(f"Unknown exit condition. Check {log_path}.yaml.")
 
 
-def get_pr_data(pr_path, feedzone_cell_inds, n_feedzones):
-    """Returns the temperatures (deg C), pressures (MPa) and
-    enthalpies (kJ/kg) from a production history simulation."""
-
-    with h5py.File(f"{pr_path}.h5", "r") as f:
-    
-        cell_inds = f["cell_index"][:, 0]
-        src_inds = f["source_index"][:, 0]
-        
-        temp = f["cell_fields"]["fluid_temperature"]
-        pres = f["cell_fields"]["fluid_pressure"]
-        enth = f["source_fields"]["source_enthalpy"]
-
-        ns_temp = np.array(temp[0][cell_inds])
-        pr_pres = np.array([p[cell_inds][feedzone_cell_inds] for p in pres])
-        pr_enth = np.array([e[src_inds][-n_feedzones:] for e in enth])
-
-        pr_pres /= 1e6
-        pr_enth /= 1e3
-
-    F_i = np.concatenate((ns_temp.flatten(), 
-                          pr_pres.flatten(), 
-                          pr_enth.flatten()))
-
-    return F_i
-
 if __name__ == "__main__":
     
     Ne = 1000
-
-    feedzone_cell_inds = np.array([w.feedzone_cell.index for w in wells_crse])
-    n_feedzones = len(well_centres)
 
     Fs = []
     Gs = []
@@ -86,7 +57,7 @@ if __name__ == "__main__":
         print(f"{i}: {flag}")
 
         if flag == ExitFlag.SUCCESS:
-            F_i = get_pr_data(pr_path, feedzone_cell_inds, n_feedzones)
+            F_i = data_handler_crse.get_pr_data(pr_path)
             G_i = data_handler_crse.get_obs(F_i)
             Fs.append(F_i)
             Gs.append(G_i)

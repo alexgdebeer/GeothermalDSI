@@ -1,3 +1,4 @@
+import h5py
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
 
@@ -18,6 +19,7 @@ class DataHandler():
         self.n_cur_wells = n_cur_wells
 
         self.feedzone_coords = np.array([w.feedzone_cell.centre for w in wells])
+        self.feedzone_inds = np.array([w.feedzone_cell.index for w in wells])
 
         self.tmax = tmax 
         self.ts = np.linspace(0, tmax, nt+1)
@@ -29,14 +31,14 @@ class DataHandler():
         self.inds_prod_obs = np.searchsorted(self.ts, prod_obs_ts-EPS)
         self.n_prod_obs_ts = len(self.prod_obs_ts)
 
-        self.n_ns_temp_full = self.mesh.m.num_cells
+        self.pr_temp_ind = self.inds_prod_obs[-1] # TODO: check if this is good.
 
-        self.n_temp_full = (self.nt+1) * self.n_wells
-        self.n_pres_full = (self.nt+1) * self.n_wells
-        self.n_enth_full = (self.nt+1) * self.n_wells
+        self.n_ns_temp = self.mesh.m.num_cells
+        self.n_pr_temp = self.mesh.m.num_cells
+        self.n_pr_pres = (self.nt+1) * self.n_wells
+        self.n_pr_enth = (self.nt+1) * self.n_wells
 
         self.n_temp_obs = len(self.temp_obs_cs)
-
         self.n_pres_obs = self.n_prod_obs_ts * self.n_cur_wells
         self.n_enth_obs = self.n_prod_obs_ts * self.n_cur_wells
 
@@ -48,10 +50,10 @@ class DataHandler():
         and enthalpies from a vector of complete data.
         """
         
-        self.inds_full_ns_temp = np.arange(self.n_temp_full)
-        self.inds_full_temp = np.arange(self.n_temp_full) + 1 + self.inds_full_temp_ns[-1]
-        self.inds_full_pres = np.arange(self.n_pres_full) + 1 + self.inds_full_temp[-1]
-        self.inds_full_enth = np.arange(self.n_enth_full) + 1 + self.inds_full_pres[-1]
+        self.inds_ns_temp = np.arange(self.n_ns_temp)
+        self.inds_pr_temp = np.arange(self.n_pr_temp) + 1 + self.inds_ns_temp[-1]
+        self.inds_pr_pres = np.arange(self.n_pr_pres) + 1 + self.inds_pr_temp[-1]
+        self.inds_pr_enth = np.arange(self.n_pr_enth) + 1 + self.inds_pr_pres[-1]
 
     def generate_inds_obs(self):
         """Generates indices used to extract temperatures, pressures 
@@ -61,6 +63,35 @@ class DataHandler():
         self.inds_obs_temp = np.arange(self.n_temp_obs)
         self.inds_obs_pres = np.arange(self.n_pres_obs) + 1 + self.inds_obs_temp[-1]
         self.inds_obs_enth = np.arange(self.n_enth_obs) + 1 + self.inds_obs_pres[-1]
+
+    def get_pr_data(self, pr_path):
+        """Returns the temperatures (deg C), pressures (MPa) and
+        enthalpies (kJ/kg) from a production history simulation."""
+
+        with h5py.File(f"{pr_path}.h5", "r") as f:
+        
+            cell_inds = f["cell_index"][:, 0]
+            src_inds = f["source_index"][:, 0]
+            
+            temp = f["cell_fields"]["fluid_temperature"]
+            pres = f["cell_fields"]["fluid_pressure"]
+            enth = f["source_fields"]["source_enthalpy"]
+
+            ns_temp = np.array(temp[0][cell_inds])
+            pr_temp = np.array(temp[self.pr_temp_ind][cell_inds])
+
+            pr_pres = [p[cell_inds][self.feedzone_inds] for p in pres]
+            pr_enth = [e[src_inds][-self.n_wells:] for e in enth]
+
+            pr_pres = np.array(pr_pres) / 1e6
+            pr_enth = np.array(pr_enth) / 1e3
+
+        F_i = np.concatenate((ns_temp.flatten(), 
+                              pr_temp.flatten(),
+                              pr_pres.flatten(), 
+                              pr_enth.flatten()))
+
+        return F_i
 
     def reshape_to_wells(self, obs):
         """Reshapes a 1D array of observations such that each column 
@@ -77,19 +108,19 @@ class DataHandler():
         return np.reshape(obs, (-1, self.n_cur_wells))
     
     def get_full_ns_temperatures(self, F_i):
-        temp = F_i[self.inds_full_ns_temp]
+        temp = F_i[self.inds_ns_temp]
         return temp
 
     def get_full_temperatures(self, F_i):
-        temp = F_i[self.inds_full_temp]
-        return self.reshape_to_wells(temp)
+        temp = F_i[self.inds_pr_temp]
+        return temp
 
     def get_full_pressures(self, F_i):
-        pres = F_i[self.inds_full_pres]
+        pres = F_i[self.inds_pr_pres]
         return self.reshape_to_wells(pres)
 
     def get_full_enthalpies(self, F_i):
-        enth = F_i[self.inds_full_enth]
+        enth = F_i[self.inds_pr_enth]
         return self.reshape_to_wells(enth)
 
     def get_full_states(self, F_i):
@@ -116,7 +147,9 @@ class DataHandler():
     
     def get_obs_states(self, F_i):
         """Extracts the observations from a complete vector of model 
-        output, and returns each type of observation individually."""
+        output, and returns each type of observation individually.
+        """
+
         ns_temp_full, _, pres_full, enth_full = self.get_full_states(F_i)
         temp_obs = self.get_obs_temperatures(ns_temp_full)
         pres_obs = self.get_obs_pressures(pres_full)
@@ -125,7 +158,9 @@ class DataHandler():
     
     def get_obs(self, F_i):
         """Extracts the observations from a complete vector of model
-        output, and returns them as a vector."""
+        output, and returns them as a vector.
+        """
+
         temp_obs, pres_obs, enth_obs = self.get_obs_states(F_i)
         obs = np.concatenate((temp_obs.flatten(), 
                               pres_obs.flatten(), 
@@ -142,7 +177,7 @@ class DataHandler():
         enth_obs = self.reshape_to_cur_wells(G_i[self.inds_obs_enth])
         return temp_obs, pres_obs, enth_obs
 
-    def downhole_temps(self, temp_full, well_num):
+    def get_downhole_temps(self, temp_full, well_num):
         """Returns interpolated temperatures down a single well."""
 
         well = self.wells[well_num]
@@ -168,7 +203,7 @@ class DataHandler():
                 dp = pres[i-1, j] - pres[i, j]
                 pres[i, j] = np.log(dp + eps)
         
-        F_i[self.inds_full_pres] = pres.flatten()
+        F_i[self.inds_pr_pres] = pres.flatten()
         return F_i
 
     def inv_transform_pressures(self, F_i, eps=0.01):
@@ -182,5 +217,5 @@ class DataHandler():
             for j in range(n_wells):
                 pres[i, j] = pres[i-1, j] - np.exp(pres[i, j]) + eps
         
-        F_i[self.inds_full_pres] = pres.flatten()
+        F_i[self.inds_pr_pres] = pres.flatten()
         return F_i

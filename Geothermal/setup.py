@@ -178,14 +178,9 @@ Ensemble functions
 
 def generate_particle(p_i, num):
     name = f"{MODEL_PATH_CRSE}_{num}"
-    logks_t, upflows_t = prior.split(p_i)
-    model = Model(name, mesh_crse, logks_t, wells_crse, upflows_t, dt, tmax)
+    logks, upflows = prior.split(p_i)
+    model = Model(name, mesh_crse, logks, wells_crse, upflows, dt, tmax)
     return model
-
-def get_result(particle: Model):
-    F_i = particle.get_pr_data()
-    G_i = data_handler_crse.get_obs(F_i)
-    return F_i, G_i
 
 """
 Prior
@@ -200,7 +195,7 @@ prior = Prior(
 Truth generation
 """
 
-noise_level = 0.05
+noise_level = 0.02
 
 truth_dist = Prior(
     mesh_fine, clay_cap_fine, fault_fine, 
@@ -220,10 +215,10 @@ def generate_truth():
     # grf_perm_fine.plot(logks_t)
     # grf_perm_fine.slice_plot(logks_t)
     
-    if model_t.run() != ExitFlag.SUCCESS:
-        raise Exception("Truth failed to run.")
+    # if model_t.run() != ExitFlag.SUCCESS:
+    #     raise Exception("Truth failed to run.")
 
-    F_t = model_t.get_pr_data()
+    F_t = data_handler_fine.get_pr_data(model_t.pr_path)
     G_t = data_handler_fine.get_obs(F_t)
 
     # temps = data_handler_fine.get_full_temperatures(F_t)
@@ -272,7 +267,3 @@ if READ_TRUTH:
 else:
     p_t, F_t, G_t = generate_truth()
     y, C_e = generate_data(G_t)
-
-Np = mesh_crse.m.num_cells + mesh_crse.m.num_columns
-NF = mesh_crse.m.num_cells + 2 * n_wells * (nt+1)
-NG = len(y)
