@@ -1,5 +1,7 @@
 # Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12193948.svg)](https://doi.org/10.5281/zenodo.12193948)
+
 ![3D Reservoir Model](3d_model.png)
 
 This repository contains code written as part of the paper "Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models", by Alex de Beer, Andrew Power, Daniel Wong, Ken Dekkers, Michael Gravatt, John P. O'Sullivan, Michael J. O'Sullivan, Oliver J. Maclaren, and Ruanui Nicholson.
