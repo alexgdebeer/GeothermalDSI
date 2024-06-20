@@ -1,0 +1,9 @@
+h5py>=3.9.0
+layermesh>=0.3.2
+numpy>=1.25.2
+pip>=24.0
+pyvista>=0.42.3
+pywaiwera>=1.4.0
+PyYAML>=6.0
+scipy>=1.11.2
+setuptools>=65.5.1
