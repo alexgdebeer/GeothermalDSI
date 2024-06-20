@@ -57,9 +57,10 @@ if __name__ == "__main__":
         print(f"{i}: {flag}")
 
         if flag == ExitFlag.SUCCESS:
+            
             F_i, G_i = data_handler_crse.get_pr_data(pr_path)
-
             ps = data_handler_crse.get_pr_pressures(F_i)
+            
             if np.min(ps) > P_ATM / 1e6:
                 Fs.append(Fs.T[i])
                 Gs.append(Gs.T[i])
