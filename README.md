@@ -14,6 +14,8 @@ Pkg.instantiate()
 ```
 to install the project dependencies. You will then be able to run any of the scripts at the top level of the folder.
 
+To compute a full characterisation of the posterior using MCMC, run `run_pcn.jl` (this will take several days on a desktop computer). To compute a local linearisation about the MAP estimate, run `run_map.jl`, and to run the DSI algorithm, run `run_dsi.jl`. 
+
 ## Three-Dimensional Reservoir Model
 
 Code to run the experiments for the three-dimensional reservoir model is contained in the `Model3D` folder. The scripts in this folder require Python >= 3.8 to run. After installing Python and cloning this repository, open this folder and run
