@@ -20,7 +20,7 @@ To compute a full characterisation of the posterior using MCMC, run `run_pcn.jl`
 
 Code to run the experiments for the three-dimensional reservoir model is contained in the `Model3D` folder. The scripts in this folder require Python >= 3.8 to run. After installing Python and cloning this repository, open this folder and run
 ```
-pip install requirements.txt
+python3.8 -m pip install -r requirements.txt
 ```
 to install the project dependencies. You will also need to install the Waiwera geothermal simulator; for further information, consult the [Waiwera website](https://waiwera.github.io). 
 
