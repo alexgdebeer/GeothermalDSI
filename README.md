@@ -21,10 +21,12 @@ Code to run the experiments for the three-dimensional reservoir model is contain
 pip install requirements.txt
 ```
 to install the project dependencies. You will also need to install the Waiwera geothermal simulator; for further information, consult the [Waiwera website](https://waiwera.github.io). 
+
  - To generate the ensemble of reservoir models used to estimate the covariance matrices required as part of the DSI algorithm, run `generate_ensemble.py`. The resulting simulation input files can then be run [locally using Docker](https://waiwera.readthedocs.io/en/latest/run.html) (though this is likely to take a while), or on a high-performance computing cluster which contains a Waiwera build. We have included the jobfile we used to run the simulations on the Maui cluster operated by NeSI (New Zealand eScience Infrastucture).
  - To gather the statistics of the quantities of interest, run `process_output.py`. This will ignore the results associated with failed simulations. 
  - To run the DSI algorithm to approximate the posterior predictive distribution of the quantities of interest, run `run_dsi.py` or `run_dsi_trans.py` (which will run the DSI algorithm with a transformation applied to the pressure predictions).
 
+**Note**: the `models` folder contains the meshes for the fine and coarse models used in the paper, and the input and output files for the true system. Files related to the true system are also located in `data/truth`. We have provided files containing the predictive quantites of interest associated with the simulations from the prior produced using `process_output.py` (these are located in the `data` folder), so if you are only looking to reproduce the DSI analysis from the paper, you do not need to run the full set of simulations.
 
 ## Issues
 
