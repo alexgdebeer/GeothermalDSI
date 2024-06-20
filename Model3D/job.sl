@@ -5,7 +5,7 @@
 #SBATCH --mem-per-cpu=2GB
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --array=0-995		# Model indices
+#SBATCH --array=0-999		# Model indices
 
 #SBATCH --mail-user=adeb970@aucklanduni.ac.nz
 #SBATCH --mail-type=ALL
