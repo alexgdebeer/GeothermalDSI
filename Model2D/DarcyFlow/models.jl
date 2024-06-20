@@ -1,6 +1,3 @@
-using SparseArrays
-
-
 """Well that has been mollified using a bump function of radius r."""
 struct Well
 

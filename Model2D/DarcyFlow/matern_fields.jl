@@ -1,7 +1,3 @@
-using Distributions
-using LinearAlgebra
-
-
 struct MaternField
 
     μ::AbstractVector
