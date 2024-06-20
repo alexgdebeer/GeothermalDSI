@@ -67,13 +67,3 @@ trace_3 = ωs[35, :, :]
 sample_inds = rand(WARMUP_LENGTH+1:N_SAMPLES, 200)
 us_samp = reshape(us[:, sample_inds, :], 2500, 1000)
 Fs = model_c.B_wells * hcat([F(u_i) for u_i ∈ eachcol(us_samp)]...)
-
-# h5write(RESULTS_FNAME, "trace_1", trace_1)
-# h5write(RESULTS_FNAME, "trace_2", trace_2)
-# h5write(RESULTS_FNAME, "trace_3", trace_3)
-# h5write(RESULTS_FNAME, "mean", μ_post)
-# h5write(RESULTS_FNAME, "stds", σ_post)
-# h5write(RESULTS_FNAME, "samples_1", us[:, 5_000, :])
-# h5write(RESULTS_FNAME, "samples_2", us[:, 10_000, :])
-# h5write(RESULTS_FNAME, "ls", ls)
-# h5write(RESULTS_FNAME, "Fs_samp", Fs)
