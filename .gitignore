@@ -2,7 +2,6 @@ Manifest.toml
 .DS_Store
 __pycache__/
 
-*/data/
 */plots/
 
 */test*
