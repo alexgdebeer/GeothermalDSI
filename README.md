@@ -1,4 +1,4 @@
-# Data Space Inversion for Geothermal
+# Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models
 
 ![3D Reservoir Model](3d_model.png)
 
