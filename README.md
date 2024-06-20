@@ -28,7 +28,11 @@ to install the project dependencies. You will also need to install the Waiwera g
  - To gather the statistics of the quantities of interest, run `process_output.py`. This will ignore the results associated with failed simulations. 
  - To run the DSI algorithm to approximate the posterior predictive distribution of the quantities of interest, run `run_dsi.py` or `run_dsi_trans.py` (which will run the DSI algorithm with a transformation applied to the pressure predictions).
 
-**Note**: the `models` folder contains the meshes for the fine and coarse models used in the paper, and the input and output files for the true system. Files related to the true system are also located in `data/truth`. We have provided files containing the predictive quantites of interest associated with the simulations from the prior produced using `process_output.py` (these are located in the `data` folder), so if you are only looking to reproduce the DSI analysis from the paper, you do not need to run the full set of simulations.
+The `models` folder contains the meshes for the fine and coarse models used in the paper, and the input and output files for the true system. Files related to the true system are also located in `data/truth`. 
+
+**Note**: when the code is first run, the covariance matrices (and their Cholesky factors) of the GRFs used as part of the prior parametrisation will be computed. This is likely to take several minutes. You may also need to create folders for these files (`data/grf_2d` and `data/grf_3d`).
+
+**Note**: we have provided files containing the predictive quantites of interest associated with the simulations from the prior produced using `process_output.py` (these are located in the `data` folder), so if you are only looking to reproduce the DSI analysis from the paper, you do not need to run the full set of simulations.
 
 ## Issues
 
