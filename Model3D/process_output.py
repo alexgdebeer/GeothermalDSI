@@ -58,8 +58,14 @@ if __name__ == "__main__":
 
         if flag == ExitFlag.SUCCESS:
             F_i, G_i = data_handler_crse.get_pr_data(pr_path)
-            Fs.append(F_i)
-            Gs.append(G_i)
+
+            ps = data_handler_crse.get_pr_pressures(F_i)
+            if np.min(ps) > P_ATM / 1e6:
+                Fs.append(Fs.T[i])
+                Gs.append(Gs.T[i])
+            
+            else: 
+                utils.warn("Simulation contains very low pressures.")
 
     Fs = np.hstack([F_i[:, np.newaxis] for F_i in Fs])
     Gs = np.hstack([G_i[:, np.newaxis] for G_i in Gs])
