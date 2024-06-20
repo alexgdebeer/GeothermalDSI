@@ -1,4 +1,3 @@
-from abc import ABC
 from copy import deepcopy
 from enum import Enum
 from itertools import product
@@ -202,7 +201,7 @@ class ClayCap():
         return np.where(cell_radii < cap_radii)
 
 
-class Model(ABC):
+class Model():
     """Base class for models, with a set of default methods."""
 
     def __init__(self, path: str, mesh: Mesh, perms: np.ndarray, 

@@ -57,8 +57,7 @@ if __name__ == "__main__":
         print(f"{i}: {flag}")
 
         if flag == ExitFlag.SUCCESS:
-            F_i = data_handler_crse.get_pr_data(pr_path)
-            G_i = data_handler_crse.get_obs(F_i)
+            F_i, G_i = data_handler_crse.get_pr_data(pr_path)
             Fs.append(F_i)
             Gs.append(G_i)
 

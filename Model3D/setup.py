@@ -218,8 +218,7 @@ def generate_truth():
     # if model_t.run() != ExitFlag.SUCCESS:
     #     raise Exception("Truth failed to run.")
 
-    F_t = data_handler_fine.get_pr_data(model_t.pr_path)
-    G_t = data_handler_fine.get_obs(F_t)
+    F_t, G_t = data_handler_fine.get_pr_data(model_t.pr_path)
 
     # temps = data_handler_fine.get_full_temperatures(F_t)
     # grf_perm_fine.plot(temps)
