@@ -1,6 +1,6 @@
 # Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12193948.svg)](https://doi.org/10.5281/zenodo.12193948)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12193947.svg)](https://doi.org/10.5281/zenodo.12193947)
 
 ![3D Reservoir Model](3d_model.png)
 
