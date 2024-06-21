@@ -2,10 +2,7 @@ Manifest.toml
 .DS_Store
 __pycache__/
 
-*/plots/
-
 */test*
-*/plot*
 
 *.cid
 *.idcheck
