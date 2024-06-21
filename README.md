@@ -40,7 +40,7 @@ The `models` folder contains the meshes for the fine and coarse models used in t
 
 ## Generating Figures
 
-Each model folder contains a script called `plotting.py`, which can be run to reproduce the figures from the paper associated with the model. Running this script requires Python >= 3.8. The figures are saved to the `figures` directory, and have the same numbering as in the manuscript. Some figures are composed of multiple parts; in these instances, the parts that make up the figure as saved as `fig1a.pdf`, `fig1b.pdf`, etc. 
+Each model folder contains a script called `plotting.py`, which can be run to reproduce the figures from the paper associated with the model. Running these script requires Python >= 3.8, and a subset of the dependencies required to run the experiments for the three-dimensional reservoir model. The figures are saved to the `figures` directory, and have the same numbering as in the manuscript. Some figures are composed of multiple parts; in these instances, the parts that make up the figure as saved as `fig1a.pdf`, `fig1b.pdf`, etc. 
 
 ## Issues
 
