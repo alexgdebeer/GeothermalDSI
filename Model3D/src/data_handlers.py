@@ -30,7 +30,7 @@ class DataHandler():
         self.inds_prod_obs = np.searchsorted(self.ts, ts_prod_obs-EPS)
         self.num_ts_prod_obs = len(self.ts_prod_obs)
 
-        self.ind_pr_temp = self.inds_prod_obs[-1] # TODO: check if this is right.
+        self.ind_pr_temp = self.inds_prod_obs[-1]
 
         self.downhole_coords = []
         self.downhole_elevs = []

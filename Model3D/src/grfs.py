@@ -79,7 +79,7 @@ class GRF2D(GRF):
         self.points = np.array([[*col.centre, 0] for col in mesh.m.column])
         
         self.m = mesh
-        self.fem_mesh = pv.PolyData(self.points).delaunay_2d() # needed?
+        self.fem_mesh = pv.PolyData(self.points).delaunay_2d()
 
         self.folder = folder
         self.load_matrices()
