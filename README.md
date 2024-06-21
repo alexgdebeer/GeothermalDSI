@@ -18,7 +18,7 @@ Pkg.instantiate()
 ```
 to install the project dependencies. You will then be able to run any of the scripts at the top level of the folder.
 
-To compute a full characterisation of the posterior using MCMC, run `run_pcn.jl` (this will take several days on a desktop computer). To compute a local linearisation about the MAP estimate, run `run_map.jl`, and to run the DSI algorithm, run `run_dsi.jl`. 
+To compute a full characterisation of the posterior using MCMC, run `run_pcn.jl` (this will take several days on a desktop computer). To compute a local linearisation about the MAP estimate, run `run_lmap.jl`, to run the DSI algorithm, run `run_dsi.jl`, and to sample from the prior, run `run_pri.jl`. To carry out a comparison of the performance of DSI with varying sample sizes, run `run_dsi_comparison.jl`.
 
 ### Three-Dimensional Reservoir Model
 
