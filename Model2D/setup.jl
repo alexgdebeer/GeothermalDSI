@@ -8,6 +8,7 @@ include("DarcyFlow/DarcyFlow.jl")
 seed!(1)
 
 FILE_TRUTH = "data/truth.h5"
+WRITE_SETUP_DATA = false
 
 # ----------------
 # Reservoir properties 
@@ -180,3 +181,26 @@ d_obs = read_obs()
 
 F(u::AbstractVector) = solve(grid_c, model_c, u)
 G(p::AbstractVector) = model_c.B_obs * p
+
+if WRITE_SETUP_DATA
+
+    us_pri = [reshape(transform(pr, rand(pr)), 50, 50) for _ ∈ 1:4]
+    us_pri = cat(us_pri..., dims=3)
+
+    well_pressures = reshape(model_f.B_wells * F_t, 9, :)
+    well_pressures = hcat(fill(2e7, 9), well_pressures)
+
+    h5write("data/setup.h5", "ts", [0, grid_f.ts...])
+    h5write("data/setup.h5", "xs", Vector(grid_f.xs))
+    h5write("data/setup.h5", "states", reshape(F_t, 80, 80, :))
+
+    h5write("data/setup.h5", "lnperm_t", reshape(u_t, 80, 80))
+    h5write("data/setup.h5", "us_pri", us_pri)
+
+    h5write("data/setup.h5", "t_obs", t_obs)
+    h5write("data/setup.h5", "d_obs", reshape(d_obs, 9, :))
+
+    h5write("data/setup.h5", "well_centres", well_centres)
+    h5write("data/setup.h5", "well_pressures", well_pressures)
+
+end

@@ -227,8 +227,8 @@ def plot_prior_draws(data_setup, fname):
     
     for i, ax in enumerate(axes):
         ax.set_box_aspect(1)
-        ax.set_xticks([0, 500, 1000])
-        ax.set_yticks([0, 500, 1000])
+        ax.set_xticks(TICKS_XS)
+        ax.set_yticks(TICKS_XS)
         ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
         m = ax.pcolormesh(xs, xs, prior_draws[:, :, i].T, cmap=CMAP_PERM, 
                           vmin=vmin, vmax=vmax, rasterized=True)
