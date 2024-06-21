@@ -1,5 +1,7 @@
+cmocean>=4.0.3
 h5py>=3.9.0
 layermesh>=0.3.2
+matplotlib>=3.8.3
 numpy>=1.25.2
 pip>=24.0
 pyvista>=0.42.3
