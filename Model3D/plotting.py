@@ -63,10 +63,11 @@ PLOT_TRUTH = True
 PLOT_UPFLOWS = True
 PLOT_CAPS = True
 PLOT_PERMS = True
-PLOT_DATA = False
-PLOT_DSI_PREDICTIONS = False
-PLOT_TRANSFORMATION = False
-PLOT_SAMPLE_COMP = False
+PLOT_DATA = True
+PLOT_DSI_PREDICTIONS_A = True
+PLOT_DSI_PREDICTIONS_B = True
+PLOT_TRANSFORMATION = True
+PLOT_SAMPLE_COMP = True
 
 FULL_WIDTH = 10
 
@@ -710,7 +711,47 @@ if PLOT_DATA:
               elev_obs, time_obs, temp_obs, pres_obs, enth_obs, fname)
 
 
-if PLOT_DSI_PREDICTIONS:
+if PLOT_DSI_PREDICTIONS_A:
+
+    well_nums = [2, 3]
+
+    temp_t = data_handler_fine.get_pr_temperatures(F_t)
+    pres_t = data_handler_fine.get_pr_pressures(F_t)
+    enth_t = data_handler_fine.get_pr_enthalpies(F_t)
+
+    _, pres_obs, enth_obs = data_handler_fine.split_obs(y)
+
+    temp_t = [temp_t[n] for n in well_nums]
+    pres_t = pres_t.T[well_nums]
+    enth_t = enth_t.T[well_nums]
+    
+    pres_obs = pres_obs.T[well_nums] 
+    enth_obs = enth_obs.T[well_nums]
+
+    Fs_pri = np.load("data/Fs.npy")
+    Fs_dsi = np.load("data/Fs_post.npy").T
+
+    temp_pri = [np.array([data_handler_crse.get_pr_temperatures(F_i)[n] for F_i in Fs_pri.T]) for n in well_nums]
+    temp_dsi = [np.array([data_handler_crse.get_pr_temperatures(F_i)[n] for F_i in Fs_dsi.T]) for n in well_nums]
+
+    pres_pri = [np.array([data_handler_crse.get_pr_pressures(F_i).T[n] for F_i in Fs_pri.T]) for n in well_nums]
+    pres_dsi = [np.array([data_handler_crse.get_pr_pressures(F_i).T[n] for F_i in Fs_dsi.T]) for n in well_nums]
+
+    enth_pri = [np.array([data_handler_crse.get_pr_enthalpies(F_i).T[n] for F_i in Fs_pri.T]) for n in well_nums]
+    enth_dsi = [np.array([data_handler_crse.get_pr_enthalpies(F_i).T[n] for F_i in Fs_dsi.T]) for n in well_nums]
+
+    elevs_fine = [data_handler_fine.downhole_elevs[n] for n in well_nums]
+    elevs_crse = [data_handler_crse.downhole_elevs[n] for n in well_nums]
+
+    fname = "figures/fig13.pdf"
+
+    plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t, 
+                         elevs_crse, temp_pri, pres_pri, enth_pri, 
+                         temp_dsi, pres_dsi, enth_dsi,
+                         pres_obs, enth_obs, well_nums, fname)
+
+
+if PLOT_DSI_PREDICTIONS_B:
 
     well_nums = [7, 8]
 
@@ -718,14 +759,12 @@ if PLOT_DSI_PREDICTIONS:
     pres_t = data_handler_fine.get_pr_pressures(F_t)
     enth_t = data_handler_fine.get_pr_enthalpies(F_t)
 
-    temp_obs, pres_obs, enth_obs = data_handler_fine.split_obs(y)
-
     temp_t = [temp_t[n] for n in well_nums]
     pres_t = pres_t.T[well_nums]
     enth_t = enth_t.T[well_nums]
     
-    pres_obs_n = None 
-    enth_obs_n = None
+    pres_obs = None 
+    enth_obs = None
 
     Fs_pri = np.load("data/Fs.npy")
     Fs_dsi = np.load("data/Fs_post.npy").T
@@ -747,7 +786,7 @@ if PLOT_DSI_PREDICTIONS:
     plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t, 
                          elevs_crse, temp_pri, pres_pri, enth_pri, 
                          temp_dsi, pres_dsi, enth_dsi,
-                         pres_obs_n, enth_obs_n, well_nums, fname)
+                         pres_obs, enth_obs, well_nums, fname)
 
 
 if PLOT_TRANSFORMATION:
