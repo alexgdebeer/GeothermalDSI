@@ -17,6 +17,9 @@ TICK_SIZE = 10
 
 XLIMS = (0, 1000)
 
+LABEL_X1 = "$x_{1}$ [m]"
+LABEL_X2 = "$x_{2}$ [m]"
+
 OBS_END = 80
 
 
@@ -90,7 +93,7 @@ def read_results_data():
     return data
 
 
-def plot_setup(data_setup, well_to_plot=3):
+def plot_setup(data_setup, fname, well_to_plot=3):
 
     fig, axes = plt.subplots(1, 3, figsize=(10, 2.6))
 
@@ -115,8 +118,8 @@ def plot_setup(data_setup, well_to_plot=3):
 
     axes[0].set_xlim(XLIMS)
     axes[0].set_ylim(XLIMS)
-    axes[0].set_xlabel("$x_{1}$ [m]", fontsize=LABEL_SIZE)
-    axes[0].set_ylabel("$x_{2}$ [m]", fontsize=LABEL_SIZE)
+    axes[0].set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
+    axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
     axes[0].set_xticks([0, 500, 1000])
     axes[0].set_yticks([0, 500, 1000])
 
@@ -131,8 +134,8 @@ def plot_setup(data_setup, well_to_plot=3):
     axes[1].set_facecolor("lightskyblue")
     axes[1].set_xlim(XLIMS)
     axes[1].set_ylim(XLIMS)
-    axes[1].set_xlabel("$x_{1}$ [m]", fontsize=LABEL_SIZE)
-    axes[1].set_ylabel("$x_{2}$ [m]", fontsize=LABEL_SIZE)
+    axes[1].set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
+    axes[1].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
     axes[1].set_xticks([0, 500, 1000])
     axes[1].set_yticks([0, 500, 1000])
 
@@ -147,11 +150,71 @@ def plot_setup(data_setup, well_to_plot=3):
                xticks=(0, 80, 160), yticks=(13, 17, 21))
 
     plt.tight_layout()
-    plt.savefig("plots/setup.pdf")
+    plt.savefig(fname)
     plt.clf()
 
 
-def plot_results(data_setup, data_results):
+def plot_states(data_setup, fname):
+
+    states = data_setup["states"]
+    xs = data_setup["xs"]
+
+    selected_states = [
+        states[:, :, 9],
+        states[:, :, 19],
+        states[:, :, 29],
+        states[:, :, 39]
+    ]
+
+    fig, axes = plt.subplots(1, 4, figsize=(10, 2.35), layout="constrained")
+
+    for ax, state in zip(axes, selected_states):
+        ax.set_box_aspect(1)
+        ax.set_xticks([0, 500, 1000])
+        ax.set_yticks([0, 500, 1000])
+        ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
+        m = ax.pcolormesh(xs, xs, state.T, cmap="viridis", vmin=15, vmax=20, rasterized=True)
+
+    axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
+
+    axes[0].set_title("$t$ = 40 Days", fontsize=LABEL_SIZE)
+    axes[1].set_title("$t$ = 80 Days", fontsize=LABEL_SIZE)
+    axes[2].set_title("$t$ = 120 Days", fontsize=LABEL_SIZE)
+    axes[3].set_title("$t$ = 160 Days", fontsize=LABEL_SIZE)
+
+    cbar = fig.colorbar(m, ax=axes[-1], label="Pressure [MPa]")
+    cbar.ax.tick_params(labelsize=TICK_SIZE)
+
+    plt.savefig(fname)
+
+
+def plot_prior_draws(data_setup, fname):
+    
+    prior_draws = data_setup["us_pri"]
+    xs = np.linspace(10, 990, 50)
+
+    vmin = np.min(prior_draws)
+    vmax = np.max(prior_draws)
+    
+    fig, axes = plt.subplots(1, 4, figsize=(10, 2.20), layout="constrained")
+    
+    for i, ax in enumerate(axes):
+        ax.set_box_aspect(1)
+        ax.set_xticks([0, 500, 1000])
+        ax.set_yticks([0, 500, 1000])
+        ax.set_xlabel("$x_{1}$ [m]", fontsize=LABEL_SIZE)
+        m = ax.pcolormesh(xs, xs, prior_draws[:, :, i].T, cmap=cmocean.cm.thermal, 
+                          vmin=vmin, vmax=vmax, rasterized=True)
+    
+    axes[0].set_ylabel("$x_{2}$ [m]", fontsize=LABEL_SIZE)
+
+    cbar = fig.colorbar(m, ax=axes[-1], label="ln(Permeability) [ln(m$^{2}$)]")
+    cbar.ax.tick_params(labelsize=TICK_SIZE)
+
+    plt.savefig(fname)
+
+
+def plot_results(data_setup, data_results, fname):
 
     wells_to_plot = [2, 7, 3]
 
@@ -200,10 +263,10 @@ def plot_results(data_setup, data_results):
     axes[0][3].set_title("DSI", fontsize=LABEL_SIZE)
 
     plt.tight_layout()
-    plt.savefig("plots/post_samples.pdf")
+    plt.savefig(fname)
 
 
-def plot_final_pressures(data_setup, data_results):
+def plot_final_pressures(data_setup, data_results, fname):
 
     _, axes = plt.subplots(3, 3, figsize=(7.5, 8))
 
@@ -270,70 +333,10 @@ def plot_final_pressures(data_setup, data_results):
     plt.figlegend(handles=handles, loc="lower center", ncols=5, frameon=False, fontsize=LEGEND_SIZE)
 
     plt.subplots_adjust(left=0.1,bottom=0.1, right=0.95, top=0.95)
-    plt.savefig(f"plots/final_pressures.pdf")
+    plt.savefig(fname)
 
 
-def plot_states(data_setup):
-
-    states = data_setup["states"]
-    xs = data_setup["xs"]
-
-    fig, axes = plt.subplots(1, 4, figsize=(10, 2.35), layout="constrained")
-
-    selected_states = [
-        states[:, :, 9],
-        states[:, :, 19],
-        states[:, :, 29],
-        states[:, :, 39]
-    ]
-
-    for ax, state in zip(axes, selected_states):
-        ax.set_box_aspect(1)
-        ax.set_xticks([0, 500, 1000])
-        ax.set_yticks([0, 500, 1000])
-        ax.set_xlabel("$x_{1}$ [m]", fontsize=LABEL_SIZE)
-        m = ax.pcolormesh(xs, xs, state.T, cmap="viridis", vmin=15, vmax=20, rasterized=True)
-
-    axes[0].set_ylabel("$x_{2}$ [m]", fontsize=LABEL_SIZE)
-
-    axes[0].set_title("$t$ = 40 Days", fontsize=LABEL_SIZE)
-    axes[1].set_title("$t$ = 80 Days", fontsize=LABEL_SIZE)
-    axes[2].set_title("$t$ = 120 Days", fontsize=LABEL_SIZE)
-    axes[3].set_title("$t$ = 160 Days", fontsize=LABEL_SIZE)
-
-    cbar = fig.colorbar(m, ax=axes[-1], label="Pressure [MPa]")
-    cbar.ax.tick_params(labelsize=TICK_SIZE)
-
-    plt.savefig("plots/pressures.pdf")
-
-
-def plot_prior_draws(data_setup):
-    
-    prior_draws = data_setup["us_pri"]
-    xs = np.linspace(10, 990, 50)
-
-    vmin = np.min(prior_draws)
-    vmax = np.max(prior_draws)
-    
-    fig, axes = plt.subplots(1, 4, figsize=(10, 2.20), layout="constrained")
-    
-    for i, ax in enumerate(axes):
-        ax.set_box_aspect(1)
-        ax.set_xticks([0, 500, 1000])
-        ax.set_yticks([0, 500, 1000])
-        ax.set_xlabel("$x_{1}$ [m]", fontsize=LABEL_SIZE)
-        m = ax.pcolormesh(xs, xs, prior_draws[:, :, i].T, cmap=cmocean.cm.thermal, 
-                          vmin=vmin, vmax=vmax, rasterized=True)
-    
-    axes[0].set_ylabel("$x_{2}$ [m]", fontsize=LABEL_SIZE)
-
-    cbar = fig.colorbar(m, ax=axes[-1], label="ln(Permeability) [ln(m$^{2}$)]")
-    cbar.ax.tick_params(labelsize=TICK_SIZE)
-
-    plt.savefig("plots/prior_draws.pdf")
-
-
-def plot_sample_comparison(data_setup, data_results):
+def plot_sample_comparison(data_setup, data_results, fname):
 
     _, axes = plt.subplots(3, 3, figsize=(7.5, 8))
 
@@ -400,7 +403,7 @@ def plot_sample_comparison(data_setup, data_results):
     plt.figlegend(handles=handles, loc="lower center", ncols=5, frameon=False, fontsize=TICK_SIZE)
 
     plt.subplots_adjust(left=0.1, bottom=0.13, right=0.95, top=0.95)
-    plt.savefig(f"plots/dsi_sample_comparison.pdf")
+    plt.savefig(fname)
 
 
 if __name__ == "__main__":
@@ -408,9 +411,9 @@ if __name__ == "__main__":
     data_setup = read_setup_data()
     data_results = read_results_data()
 
-    plot_setup(data_setup)
-    plot_states(data_setup)
-    plot_prior_draws(data_setup)
-    plot_results(data_setup, data_results)
-    plot_final_pressures(data_setup, data_results)
-    plot_sample_comparison(data_setup, data_results)
+    plot_setup(data_setup, fname="plots/fig1.pdf")
+    plot_states(data_setup, fname="plots/fig2.pdf")
+    plot_prior_draws(data_setup, fname="plots/fig3.pdf")
+    plot_results(data_setup, data_results, fname="plots/fig4.pdf")
+    plot_final_pressures(data_setup, data_results, fname="plots/fig5.pdf")
+    plot_sample_comparison(data_setup, data_results, fname="plots/fig6.pdf")
