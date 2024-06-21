@@ -42,6 +42,8 @@ LABEL_PROB = "Probability Density"
 
 OBS_END = 80
 
+DSI_SAMPLES = [10, 100, 500, 1000, 2000, 5000, 10_000]
+
 FULL_WIDTH = 10
 
 
@@ -108,7 +110,7 @@ def read_results_data():
         data["dsi_preds"] = f["dsi_preds"][:, :] / 1e6
         data["ts_preds"] = f["ts"][:]
 
-        for i in [10, 100, 500, 1000, 2000, 5000, 10_000]:
+        for i in DSI_SAMPLES:
             data[f"dsi_m_{i}"] = f[f"dsi_m_{i}"][:, :].T / 1e6
             data[f"dsi_s_{i}"] = f[f"dsi_s_{i}"][:, :].T / 1e6
 
@@ -366,8 +368,6 @@ def plot_sample_comparison(data_setup, data_results, fname):
 
     _, axes = plt.subplots(3, 3, figsize=(0.75*FULL_WIDTH, 0.8*FULL_WIDTH))
 
-    dsi_samples = [10, 100, 500, 1000, 2000, 5000, 10_000]
-
     cmap = mpl.colormaps["Blues"].resampled(1000)
     cmap = cmap(np.linspace(0.25, 0.9, 7))
 
@@ -377,8 +377,8 @@ def plot_sample_comparison(data_setup, data_results, fname):
 
         well_num = well_nums_r[i]
 
-        means = [data_results[f"dsi_m_{n}"][well_num][-1] for n in dsi_samples]
-        stds = [data_results[f"dsi_s_{n}"][well_num][-1] for n in dsi_samples]
+        means = [data_results[f"dsi_m_{n}"][well_num][-1] for n in DSI_SAMPLES]
+        stds = [data_results[f"dsi_s_{n}"][well_num][-1] for n in DSI_SAMPLES]
         truth = data_setup["p_wells"][well_num][-1]
 
         xmin = np.min([m-5*s for m, s in zip(means, stds)])
@@ -409,7 +409,7 @@ def plot_sample_comparison(data_setup, data_results, fname):
         for n, (m, s) in enumerate(zip(means, stds)):
             
             dsi_density = stats.norm(m, s).pdf(xs)
-            label = f"DSI ($l={dsi_samples[n]}$)"
+            label = f"DSI ($l={DSI_SAMPLES[n]}$)"
             p, = axes.flat[i].plot(xs, dsi_density, c=cmap[n], label=label, lw=1.2)
             
             if np.max(dsi_density) > ymax:

@@ -11,7 +11,6 @@ N_SAMPLES = N_BATCHES * N_SAMPLES_PER_BATCH
 WARMUP_LENGTH = 2_500 # Warmup length in batches
 
 DATA_FOLDER = "data/pcn"
-RESULTS_FNAME = "data/pcn/pcn.h5"
 
 
 function compute_psrf(
