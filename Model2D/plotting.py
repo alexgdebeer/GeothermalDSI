@@ -15,12 +15,34 @@ LABEL_SIZE = 12
 LEGEND_SIZE = 10
 TICK_SIZE = 10
 
-XLIMS = (0, 1000)
+LIMS_XS = (0, 1000)
+LIMS_TS = (0, 160)
+
+MIN_PRES = 15
+MAX_PRES = 20
+
+TICKS_XS = [0, 500, 1000]
+TICKS_TS = [0, 80, 160]
+
+CMAP_PERM = cmocean.cm.thermal
+CMAP_PRES = "viridis"
+
+C_PRI = "gray"
+C_PCN = "tomato"
+C_LMAP = "limegreen"
+C_DSI = "lightskyblue"
+C_PRES = "lightskyblue"
 
 LABEL_X1 = "$x_{1}$ [m]"
 LABEL_X2 = "$x_{2}$ [m]"
+LABEL_PERM = "ln(Permeability) [ln(m$^{2}$)]"
+LABEL_TIME = "Time [Days]"
+LABEL_PRES = "Pressure [MPa]"
+LABEL_PROB = "Probability Density"
 
 OBS_END = 80
+
+FULL_WIDTH = 10
 
 
 well_nums = [7, 4, 1, 8, 5, 2, 9, 6, 3]
@@ -95,7 +117,7 @@ def read_results_data():
 
 def plot_setup(data_setup, fname, well_to_plot=3):
 
-    fig, axes = plt.subplots(1, 3, figsize=(10, 2.6))
+    fig, axes = plt.subplots(1, 3, figsize=(FULL_WIDTH, 0.26*FULL_WIDTH))
 
     xs = data_setup["xs"]
     lnperm_t = data_setup["lnperm_t"].T
@@ -111,17 +133,17 @@ def plot_setup(data_setup, fname, well_to_plot=3):
     for ax in axes.flat:
         ax.set_box_aspect(1)
 
-    m = axes[0].pcolormesh(xs, xs, lnperm_t, cmap=cmocean.cm.thermal, rasterized=True)
+    m = axes[0].pcolormesh(xs, xs, lnperm_t, cmap=CMAP_PERM, rasterized=True)
 
-    cbar = fig.colorbar(m, ax=axes[0], label="ln(Permeability) [ln(m$^2$)]")
+    cbar = fig.colorbar(m, ax=axes[0], label=LABEL_PERM)
     cbar.ax.tick_params(labelsize=TICK_SIZE)
 
-    axes[0].set_xlim(XLIMS)
-    axes[0].set_ylim(XLIMS)
+    axes[0].set_xlim(LIMS_XS)
+    axes[0].set_ylim(LIMS_XS)
     axes[0].set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
     axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
-    axes[0].set_xticks([0, 500, 1000])
-    axes[0].set_yticks([0, 500, 1000])
+    axes[0].set_xticks(TICKS_XS)
+    axes[0].set_yticks(TICKS_XS)
 
     for i, c in enumerate(well_centres):
 
@@ -132,22 +154,22 @@ def plot_setup(data_setup, fname, well_to_plot=3):
         axes[1].text(cx, cy+40, name, ha="center", va="bottom", fontsize=TICK_SIZE)
 
     axes[1].set_facecolor("lightskyblue")
-    axes[1].set_xlim(XLIMS)
-    axes[1].set_ylim(XLIMS)
+    axes[1].set_xlim(LIMS_XS)
+    axes[1].set_ylim(LIMS_XS)
     axes[1].set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
     axes[1].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
-    axes[1].set_xticks([0, 500, 1000])
-    axes[1].set_yticks([0, 500, 1000])
+    axes[1].set_xticks(TICKS_XS)
+    axes[1].set_yticks(TICKS_XS)
 
     axes[2].plot(ts, pres_t, c="k", zorder=2)
     axes[2].scatter(t_obs, pres_obs, c="k", s=10, zorder=2)
     axes[2].axvline(OBS_END, ls="--", c="gray", ymin=1/12, ymax=11/12, zorder=1)
 
-    axes[2].set_xlabel("Time [days]", fontsize=LABEL_SIZE)
-    axes[2].set_ylabel("Pressure [MPa]", fontsize=LABEL_SIZE)
+    axes[2].set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
+    axes[2].set_ylabel(LABEL_PRES, fontsize=LABEL_SIZE)
 
-    tufte_axis(axes[2], bnds_x=(0, 160), bnds_y=(13, 21), 
-               xticks=(0, 80, 160), yticks=(13, 17, 21))
+    tufte_axis(axes[2], bnds_x=LIMS_TS, bnds_y=(13, 21), 
+               xticks=TICKS_TS, yticks=(13, 17, 21))
 
     plt.tight_layout()
     plt.savefig(fname)
@@ -166,14 +188,16 @@ def plot_states(data_setup, fname):
         states[:, :, 39]
     ]
 
-    fig, axes = plt.subplots(1, 4, figsize=(10, 2.35), layout="constrained")
+    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 0.23*FULL_WIDTH), 
+                             layout="constrained")
 
     for ax, state in zip(axes, selected_states):
         ax.set_box_aspect(1)
-        ax.set_xticks([0, 500, 1000])
-        ax.set_yticks([0, 500, 1000])
+        ax.set_xticks(TICKS_XS)
+        ax.set_yticks(TICKS_XS)
         ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
-        m = ax.pcolormesh(xs, xs, state.T, cmap="viridis", vmin=15, vmax=20, rasterized=True)
+        m = ax.pcolormesh(xs, xs, state.T, cmap=CMAP_PRES, 
+                          vmin=MIN_PRES, vmax=MAX_PRES, rasterized=True)
 
     axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
 
@@ -182,7 +206,7 @@ def plot_states(data_setup, fname):
     axes[2].set_title("$t$ = 120 Days", fontsize=LABEL_SIZE)
     axes[3].set_title("$t$ = 160 Days", fontsize=LABEL_SIZE)
 
-    cbar = fig.colorbar(m, ax=axes[-1], label="Pressure [MPa]")
+    cbar = fig.colorbar(m, ax=axes[-1], label=LABEL_PRES)
     cbar.ax.tick_params(labelsize=TICK_SIZE)
 
     plt.savefig(fname)
@@ -196,19 +220,20 @@ def plot_prior_draws(data_setup, fname):
     vmin = np.min(prior_draws)
     vmax = np.max(prior_draws)
     
-    fig, axes = plt.subplots(1, 4, figsize=(10, 2.20), layout="constrained")
+    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 0.22*FULL_WIDTH), 
+                             layout="constrained")
     
     for i, ax in enumerate(axes):
         ax.set_box_aspect(1)
         ax.set_xticks([0, 500, 1000])
         ax.set_yticks([0, 500, 1000])
-        ax.set_xlabel("$x_{1}$ [m]", fontsize=LABEL_SIZE)
-        m = ax.pcolormesh(xs, xs, prior_draws[:, :, i].T, cmap=cmocean.cm.thermal, 
+        ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
+        m = ax.pcolormesh(xs, xs, prior_draws[:, :, i].T, cmap=CMAP_PERM, 
                           vmin=vmin, vmax=vmax, rasterized=True)
     
-    axes[0].set_ylabel("$x_{2}$ [m]", fontsize=LABEL_SIZE)
+    axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
 
-    cbar = fig.colorbar(m, ax=axes[-1], label="ln(Permeability) [ln(m$^{2}$)]")
+    cbar = fig.colorbar(m, ax=axes[-1], label=LABEL_PERM)
     cbar.ax.tick_params(labelsize=TICK_SIZE)
 
     plt.savefig(fname)
@@ -235,10 +260,10 @@ def plot_results(data_setup, data_results, fname):
         pres_t = data_setup["p_wells"][well_num]
         pres_obs = data_setup["d_obs"][well_num]
 
-        axes[i][0].plot(ts_preds, pri_preds, c="lightskyblue", alpha=0.05)
-        axes[i][1].plot(ts_preds, pcn_preds, c="lightskyblue", alpha=0.05)
-        axes[i][2].plot(ts_preds, lmap_preds, c="lightskyblue", alpha=0.05)
-        axes[i][3].plot(ts_preds, dsi_preds, c="lightskyblue", alpha=0.05)
+        axes[i][0].plot(ts_preds, pri_preds, c=C_PRES, alpha=0.05)
+        axes[i][1].plot(ts_preds, pcn_preds, c=C_PRES, alpha=0.05)
+        axes[i][2].plot(ts_preds, lmap_preds, c=C_PRES, alpha=0.05)
+        axes[i][3].plot(ts_preds, dsi_preds, c=C_PRES, alpha=0.05)
 
         for ax in axes[i]:
 
@@ -249,13 +274,13 @@ def plot_results(data_setup, data_results, fname):
                        xticks=(0, 80, 160), yticks=(14, 17.5, 21))
 
             ax.set_box_aspect(1)
-            ax.axvline(80, ls="--", c="gray", ymin=1/12, ymax=11/12, zorder=1)
+            ax.axvline(OBS_END, ls="--", c="gray", ymin=1/12, ymax=11/12, zorder=1)
 
         n = well_nums[well_num]
         axes[i][0].set_ylabel(f"Well {n} Pressure [MPa]", fontsize=LABEL_SIZE)
 
     for ax in axes[-1]:
-        ax.set_xlabel("Time [Days]", fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
 
     axes[0][0].set_title("Prior", fontsize=LABEL_SIZE)
     axes[0][1].set_title("MCMC", fontsize=LABEL_SIZE)
@@ -268,7 +293,7 @@ def plot_results(data_setup, data_results, fname):
 
 def plot_final_pressures(data_setup, data_results, fname):
 
-    _, axes = plt.subplots(3, 3, figsize=(7.5, 8))
+    _, axes = plt.subplots(3, 3, figsize=(0.75*FULL_WIDTH, 0.8*FULL_WIDTH))
 
     for i in range(9):
 
@@ -279,8 +304,8 @@ def plot_final_pressures(data_setup, data_results, fname):
         lmap_preds = data_results["lmap_preds"][well_num, :, -1]
         truth = data_setup["p_wells"][well_num][-1]
 
-        dsi_m = data_results[f"dsi_m_1000"][well_num][-1]
-        dsi_s = data_results[f"dsi_s_1000"][well_num][-1]
+        dsi_m = data_results["dsi_m_1000"][well_num][-1]
+        dsi_s = data_results["dsi_s_1000"][well_num][-1]
         
         xmin = np.min([
             np.min(pcn_preds),
@@ -314,23 +339,24 @@ def plot_final_pressures(data_setup, data_results, fname):
         ymax = np.ceil(ymax * 2) / 2
 
         p_truth = axes.flat[i].axvline(truth, c="k", ymin=1/12, ymax=11/12, zorder=0, label="Truth")
-        p_pri, = axes.flat[i].plot(xs, pri_density, c="gray", label="Prior", zorder=1, lw=1.2)
-        p_pcn, = axes.flat[i].plot(xs, pcn_density, c="tomato", ls="dashed", label="MCMC", zorder=4, lw=1.2)
-        p_lmap, = axes.flat[i].plot(xs, lmap_density, c="limegreen", label="LMAP", zorder=3, lw=1.2)
-        p_dsi, = axes.flat[i].plot(xs, dsi_density, c="deepskyblue", label="DSI", zorder=5, lw=1.2)
+        p_pri,  = axes.flat[i].plot(xs, pri_density, c=C_PRI, label="Prior", zorder=1, lw=1.2)
+        p_pcn,  = axes.flat[i].plot(xs, pcn_density, c=C_PCN, ls="dashed", label="MCMC", zorder=4, lw=1.2)
+        p_lmap, = axes.flat[i].plot(xs, lmap_density, c=C_LMAP, label="LMAP", zorder=3, lw=1.2)
+        p_dsi,  = axes.flat[i].plot(xs, dsi_density, c=C_DSI, label="DSI", zorder=5, lw=1.2)
 
         tufte_axis(axes.flat[i], bnds_x=(xmin, xmax), bnds_y=(ymin, ymax))
         axes.flat[i].set_title(f"Well {i+1}", fontsize=LABEL_SIZE)
         axes.flat[i].set_box_aspect(1)
 
     for ax in axes[-1]:
-        ax.set_xlabel("Pressure [MPa]", fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_PRES, fontsize=LABEL_SIZE)
 
     for ax in axes[:, 0]:
-        ax.set_ylabel("Probability Density", fontsize=LABEL_SIZE)
+        ax.set_ylabel(LABEL_PROB, fontsize=LABEL_SIZE)
 
     handles = [p_truth, p_pri, p_pcn, p_lmap, p_dsi]
-    plt.figlegend(handles=handles, loc="lower center", ncols=5, frameon=False, fontsize=LEGEND_SIZE)
+    plt.figlegend(handles=handles, loc="lower center", ncols=5, 
+                  frameon=False, fontsize=LEGEND_SIZE)
 
     plt.subplots_adjust(left=0.1,bottom=0.1, right=0.95, top=0.95)
     plt.savefig(fname)
@@ -338,11 +364,12 @@ def plot_final_pressures(data_setup, data_results, fname):
 
 def plot_sample_comparison(data_setup, data_results, fname):
 
-    _, axes = plt.subplots(3, 3, figsize=(7.5, 8))
+    _, axes = plt.subplots(3, 3, figsize=(0.75*FULL_WIDTH, 0.8*FULL_WIDTH))
 
     dsi_samples = [10, 100, 500, 1000, 2000, 5000, 10_000]
 
-    cmap = mpl.colormaps["Blues"].resampled(1000)(np.linspace(0.25, 0.9, 7))
+    cmap = mpl.colormaps["Blues"].resampled(1000)
+    cmap = cmap(np.linspace(0.25, 0.9, 7))
 
     handles = []
 
@@ -370,9 +397,10 @@ def plot_sample_comparison(data_setup, data_results, fname):
         ymin = 0
         ymax = np.max(pcn_density)
 
-        p_pri, = axes.flat[i].plot(xs, pri_density, c="gray", lw=1.2, label="Prior")
-        p_pcn, = axes.flat[i].plot(xs, pcn_density, c="tomato", lw=1.2, label="MCMC")
+        p_pri, = axes.flat[i].plot(xs, pri_density, c=C_PRI, lw=1.2, label="Prior")
+        p_pcn, = axes.flat[i].plot(xs, pcn_density, c=C_PCN, lw=1.2, label="MCMC")
         p_truth = axes.flat[i].axvline(truth, c="k", ymin=1/12, ymax=11/12, lw=1.2, zorder=0, label="Truth")
+        
         if i == 0:
             handles.append(p_truth)
             handles.append(p_pri)
@@ -394,13 +422,14 @@ def plot_sample_comparison(data_setup, data_results, fname):
         tufte_axis(axes.flat[i], bnds_x=(xmin, xmax), bnds_y=(ymin, np.ceil(ymax)))
         axes.flat[i].set_title(f"Well {i+1}", fontsize=LABEL_SIZE)
 
-    for i in [0, 3, 6]:
-        axes.flat[i].set_ylabel("Probability Density", fontsize=LABEL_SIZE)
+    for ax in axes[:, 0]:
+        ax.set_ylabel(LABEL_PROB, fontsize=LABEL_SIZE)
 
-    for i in [6, 7, 8]:
-        axes.flat[i].set_xlabel("Pressure [MPa]", fontsize=LABEL_SIZE)
+    for ax in axes[-1]:
+        ax.set_xlabel(LABEL_PRES, fontsize=LABEL_SIZE)
 
-    plt.figlegend(handles=handles, loc="lower center", ncols=5, frameon=False, fontsize=TICK_SIZE)
+    plt.figlegend(handles=handles, loc="lower center", ncols=5, 
+                  frameon=False, fontsize=TICK_SIZE)
 
     plt.subplots_adjust(left=0.1, bottom=0.13, right=0.95, top=0.95)
     plt.savefig(fname)
