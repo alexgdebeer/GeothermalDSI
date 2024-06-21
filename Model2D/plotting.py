@@ -250,8 +250,6 @@ def plot_results(data_setup, data_results, fname):
     ts = data_setup["ts"]
     t_obs = data_setup["t_obs"]
 
-    ts_preds = data_results["ts_preds"]
-
     for i, well_num in enumerate(wells_to_plot):
 
         pri_preds = data_results["pri_preds"][well_num, :, :].T
@@ -262,10 +260,10 @@ def plot_results(data_setup, data_results, fname):
         pres_t = data_setup["p_wells"][well_num]
         pres_obs = data_setup["d_obs"][well_num]
 
-        axes[i][0].plot(ts_preds, pri_preds, c=C_PRES, alpha=0.05)
-        axes[i][1].plot(ts_preds, pcn_preds, c=C_PRES, alpha=0.05)
-        axes[i][2].plot(ts_preds, lmap_preds, c=C_PRES, alpha=0.05)
-        axes[i][3].plot(ts_preds, dsi_preds, c=C_PRES, alpha=0.05)
+        axes[i][0].plot(ts, pri_preds, c=C_PRES, alpha=0.05)
+        axes[i][1].plot(ts, pcn_preds, c=C_PRES, alpha=0.05)
+        axes[i][2].plot(ts, lmap_preds, c=C_PRES, alpha=0.05)
+        axes[i][3].plot(ts, dsi_preds, c=C_PRES, alpha=0.05)
 
         for ax in axes[i]:
 
