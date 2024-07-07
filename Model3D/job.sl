@@ -10,7 +10,7 @@
 #SBATCH --mail-user=adeb970@aucklanduni.ac.nz
 #SBATCH --mail-type=ALL
 
-cd /nesi/nobackup/uoa00463/Geothermal_projects/SyntheticAlex/Geothermal/
+cd /nesi/nobackup/uoa00463/Geothermal_projects/DSI
 
 srun /nesi/project/uoa00463/bin/waiwera-1.4.0 models/FL8788_${SLURM_ARRAY_TASK_ID}_NS.json 
 srun /nesi/project/uoa00463/bin/waiwera-1.4.0 models/FL8788_${SLURM_ARRAY_TASK_ID}_PR.json 
