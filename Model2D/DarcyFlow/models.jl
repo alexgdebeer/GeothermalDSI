@@ -189,7 +189,7 @@ function build_Q(
                 for (j, q) ∈ enumerate(w.rates[time_inds])
                     push!(Q_i, i)
                     push!(Q_j, j)
-                    push!(Q_v, q * exp(-1/(q^2-dist_sq)) / w.Z)
+                    push!(Q_v, q * exp(-1/(w.r^2-dist_sq)) / w.Z)
                 end
             end
         end

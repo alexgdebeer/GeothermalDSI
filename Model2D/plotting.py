@@ -108,7 +108,7 @@ def read_results_data():
         data["pcn_preds"] = f["pcn_preds"][:, :] / 1e6
         data["lmap_preds"] = f["lmap_preds"][:, :] / 1e6
         data["dsi_preds"] = f["dsi_preds"][:, :] / 1e6
-        data["ts_preds"] = f["ts"][:]
+        data["ts_preds"] = f["ts_preds"][:]
 
         for i in DSI_SAMPLES:
             data[f"dsi_m_{i}"] = f[f"dsi_m_{i}"][:, :].T / 1e6
