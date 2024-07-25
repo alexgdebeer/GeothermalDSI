@@ -6,6 +6,17 @@
 
 This repository contains code written as part of the paper "Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models", by Alex de Beer, Andrew Power, Daniel Wong, Ken Dekkers, Michael Gravatt, John P. O'Sullivan, Michael J. O'Sullivan, Oliver J. Maclaren, and Ruanui Nicholson.
 
+```
+@misc{deBeer2024,
+    title={Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models}, 
+    author={Alex de Beer and Andrew Power and Daniel Wong and Ken Dekkers and Michael Gravatt and John P. O'Sullivan and Michael J. O'Sullivan and Oliver J. Maclaren and Ruanui Nicholson},
+    year={2024},
+    eprint={2407.15401},
+    archivePrefix={arXiv},
+    url={https://arxiv.org/abs/2407.15401}, 
+}
+```
+
 ## Running Experiments
 
 ### Simplified Two-Dimensional Reservoir Model
@@ -34,9 +45,9 @@ to install the project dependencies. You will also need to install the Waiwera g
 
 The `models` folder contains the meshes for the fine and coarse models used in the paper, and the input and output files for the true system. Files related to the true system are also located in `data/truth`. 
 
-**Note**: when the code is first run, the covariance matrices (and their Cholesky factors) of the GRFs used as part of the prior parametrisation will be computed. This is likely to take several minutes. You may also need to create folders for these files (`data/grf_2d` and `data/grf_3d`).
+> **_Note_**:  when the code is first run, the covariance matrices (and their Cholesky factors) of the GRFs used as part of the prior parametrisation will be computed. This is likely to take several minutes. You may also need to create folders for these files (`data/grf_2d` and `data/grf_3d`).
 
-**Note**: we have provided files containing the predictive quantites of interest associated with the simulations from the prior produced using `process_output.py` (these are located in the `data` folder), so if you are only looking to reproduce the DSI analysis from the paper, you do not need to run the full set of simulations.
+> **_Note_**: we have provided files containing the predictive quantites of interest associated with the simulations from the prior produced using `process_output.py` (these are located in the `data` folder), so if you are only looking to reproduce the DSI analysis from the paper, you do not need to run the full set of simulations.
 
 ## Generating Figures
 
