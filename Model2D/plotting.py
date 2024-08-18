@@ -6,14 +6,8 @@ import numpy as np
 from scipy import stats
 from scipy.stats import gaussian_kde
 
+plt.style.use("../paperstyle.mplstyle")
 
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif")
-
-TITLE_SIZE = 16
-LABEL_SIZE = 12
-LEGEND_SIZE = 10
-TICK_SIZE = 10
 
 LIMS_XS = (0, 1000)
 LIMS_TS = (0, 160)
@@ -28,14 +22,14 @@ CMAP_PERM = cmocean.cm.thermal
 CMAP_PRES = "viridis"
 
 C_PRI = "gray"
-C_PCN = "tomato"
-C_LMAP = "limegreen"
-C_DSI = "lightskyblue"
-C_PRES = "lightskyblue"
+C_PCN = "tab:orange"
+C_LMAP = "tab:green"
+C_DSI = "cornflowerblue"
+C_PRES = "cornflowerblue"
 
 LABEL_X1 = "$x_{1}$ [m]"
 LABEL_X2 = "$x_{2}$ [m]"
-LABEL_PERM = "ln(Permeability) [ln(m$^{2}$)]"
+LABEL_PERM = "ln(Perm) [ln(m$^{2}$)]"
 LABEL_TIME = "Time [Days]"
 LABEL_PRES = "Pressure [MPa]"
 LABEL_PROB = "Probability Density"
@@ -119,7 +113,8 @@ def read_results_data():
 
 def plot_setup(data_setup, fname, well_to_plot=3):
 
-    fig, axes = plt.subplots(1, 3, figsize=(FULL_WIDTH, 0.26*FULL_WIDTH))
+    figsize = (FULL_WIDTH, 0.27*FULL_WIDTH)
+    fig, axes = plt.subplots(1, 3, figsize=figsize)
 
     xs = data_setup["xs"]
     lnperm_t = data_setup["lnperm_t"].T
@@ -137,15 +132,15 @@ def plot_setup(data_setup, fname, well_to_plot=3):
 
     m = axes[0].pcolormesh(xs, xs, lnperm_t, cmap=CMAP_PERM, rasterized=True)
 
-    cbar = fig.colorbar(m, ax=axes[0], label=LABEL_PERM)
-    cbar.ax.tick_params(labelsize=TICK_SIZE)
+    fig.colorbar(m, ax=axes[0], label=LABEL_PERM)
 
     axes[0].set_xlim(LIMS_XS)
     axes[0].set_ylim(LIMS_XS)
-    axes[0].set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
-    axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
+    axes[0].set_xlabel(LABEL_X1)
+    axes[0].set_ylabel(LABEL_X2)
     axes[0].set_xticks(TICKS_XS)
     axes[0].set_yticks(TICKS_XS)
+    axes[0].tick_params(length=0)
 
     for i, c in enumerate(well_centres):
 
@@ -153,25 +148,26 @@ def plot_setup(data_setup, fname, well_to_plot=3):
         name = get_well_name(i)
         
         axes[1].scatter(cx, cy, c="k", s=15)
-        axes[1].text(cx, cy+40, name, ha="center", va="bottom", fontsize=TICK_SIZE)
+        axes[1].text(cx, cy+40, name, ha="center", va="bottom", fontsize=10)
 
     axes[1].set_facecolor("lightskyblue")
     axes[1].set_xlim(LIMS_XS)
     axes[1].set_ylim(LIMS_XS)
-    axes[1].set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
-    axes[1].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
+    axes[1].set_xlabel(LABEL_X1)
+    axes[1].set_ylabel(LABEL_X2)
     axes[1].set_xticks(TICKS_XS)
     axes[1].set_yticks(TICKS_XS)
+    axes[1].tick_params(length=0)
 
     axes[2].plot(ts, pres_t, c="k", zorder=2)
     axes[2].scatter(t_obs, pres_obs, c="k", s=10, zorder=2)
     axes[2].axvline(OBS_END, ls="--", c="gray", ymin=1/12, ymax=11/12, zorder=1)
 
-    axes[2].set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
-    axes[2].set_ylabel(LABEL_PRES, fontsize=LABEL_SIZE)
+    axes[2].set_xlabel(LABEL_TIME)
+    axes[2].set_ylabel(LABEL_PRES)
 
-    tufte_axis(axes[2], bnds_x=LIMS_TS, bnds_y=(13, 21), 
-               xticks=TICKS_TS, yticks=(13, 17, 21))
+    tufte_axis(axes[2], bnds_x=LIMS_TS, bnds_y=(16, 20), 
+               xticks=TICKS_TS, yticks=(16, 18, 20))
 
     plt.tight_layout()
     plt.savefig(fname)
@@ -190,26 +186,25 @@ def plot_states(data_setup, fname):
         states[:, :, 39]
     ]
 
-    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 0.23*FULL_WIDTH), 
-                             layout="constrained")
+    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 0.25*FULL_WIDTH), 
+                             sharey=True, layout="constrained")
 
     for ax, state in zip(axes, selected_states):
         ax.set_box_aspect(1)
         ax.set_xticks(TICKS_XS)
         ax.set_yticks(TICKS_XS)
-        ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_X1)
+        ax.tick_params(length=0)
         m = ax.pcolormesh(xs, xs, state.T, cmap=CMAP_PRES, 
                           vmin=MIN_PRES, vmax=MAX_PRES, rasterized=True)
 
-    axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
+    axes[0].set_ylabel(LABEL_X2)
 
-    axes[0].set_title("$t$ = 40 Days", fontsize=LABEL_SIZE)
-    axes[1].set_title("$t$ = 80 Days", fontsize=LABEL_SIZE)
-    axes[2].set_title("$t$ = 120 Days", fontsize=LABEL_SIZE)
-    axes[3].set_title("$t$ = 160 Days", fontsize=LABEL_SIZE)
-
-    cbar = fig.colorbar(m, ax=axes[-1], label=LABEL_PRES)
-    cbar.ax.tick_params(labelsize=TICK_SIZE)
+    axes[0].set_title("$t$ = 40 Days")
+    axes[1].set_title("$t$ = 80 Days")
+    axes[2].set_title("$t$ = 120 Days")
+    axes[3].set_title("$t$ = 160 Days")
+    fig.colorbar(m, ax=axes[-1], label=LABEL_PRES)
 
     plt.savefig(fname)
 
@@ -222,21 +217,20 @@ def plot_prior_draws(data_setup, fname):
     vmin = np.min(prior_draws)
     vmax = np.max(prior_draws)
     
-    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 0.22*FULL_WIDTH), 
-                             layout="constrained")
+    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 0.24*FULL_WIDTH), 
+                             sharey=True, layout="constrained")
     
     for i, ax in enumerate(axes):
         ax.set_box_aspect(1)
         ax.set_xticks(TICKS_XS)
         ax.set_yticks(TICKS_XS)
-        ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_X1)
+        ax.tick_params(length=0)
         m = ax.pcolormesh(xs, xs, prior_draws[:, :, i].T, cmap=CMAP_PERM, 
                           vmin=vmin, vmax=vmax, rasterized=True)
     
-    axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
-
-    cbar = fig.colorbar(m, ax=axes[-1], label=LABEL_PERM)
-    cbar.ax.tick_params(labelsize=TICK_SIZE)
+    axes[0].set_ylabel(LABEL_X2)
+    fig.colorbar(m, ax=axes[-1], label=LABEL_PERM)
 
     plt.savefig(fname)
 
@@ -245,7 +239,7 @@ def plot_results(data_setup, data_results, fname):
 
     wells_to_plot = [2, 7, 3]
 
-    _, axes = plt.subplots(3, 4, figsize=(10, 7.5))
+    _, axes = plt.subplots(3, 4, figsize=(10, 8.0), sharex=True, sharey=True)
 
     ts = data_setup["ts"]
     t_obs = data_setup["t_obs"]
@@ -270,22 +264,22 @@ def plot_results(data_setup, data_results, fname):
             ax.plot(ts, pres_t, c="k", zorder=2)
             ax.scatter(t_obs, pres_obs, c="k", s=10, zorder=2)
 
-            tufte_axis(ax, bnds_x=(0, 160), bnds_y=(14, 21), 
-                       xticks=(0, 80, 160), yticks=(14, 17.5, 21))
+            tufte_axis(ax, bnds_x=(0, 160), bnds_y=(16, 20), 
+                       xticks=(0, 80, 160), yticks=(16, 18, 20))
 
             ax.set_box_aspect(1)
             ax.axvline(OBS_END, ls="--", c="gray", ymin=1/12, ymax=11/12, zorder=1)
 
         n = well_nums[well_num]
-        axes[i][0].set_ylabel(f"Well {n} Pressure [MPa]", fontsize=LABEL_SIZE)
+        axes[i][0].set_ylabel(f"Well {n} Pressure [MPa]")
 
     for ax in axes[-1]:
-        ax.set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_TIME)
 
-    axes[0][0].set_title("Prior", fontsize=LABEL_SIZE)
-    axes[0][1].set_title("MCMC", fontsize=LABEL_SIZE)
-    axes[0][2].set_title("LMAP", fontsize=LABEL_SIZE)
-    axes[0][3].set_title("DSI", fontsize=LABEL_SIZE)
+    axes[0][0].set_title("Prior")
+    axes[0][1].set_title("MCMC")
+    axes[0][2].set_title("LMAP")
+    axes[0][3].set_title("DSI")
 
     plt.tight_layout()
     plt.savefig(fname)
@@ -293,7 +287,7 @@ def plot_results(data_setup, data_results, fname):
 
 def plot_final_pressures(data_setup, data_results, fname):
 
-    _, axes = plt.subplots(3, 3, figsize=(0.75*FULL_WIDTH, 0.8*FULL_WIDTH))
+    _, axes = plt.subplots(3, 3, figsize=(0.75*FULL_WIDTH, 0.86*FULL_WIDTH))
 
     for i in range(9):
 
@@ -319,8 +313,8 @@ def plot_final_pressures(data_setup, data_results, fname):
             dsi_m + 4 * dsi_s
         ])
 
-        xmin = np.min([np.floor(xmin * 2) / 2, 14.5])
-        xmax = np.max([np.ceil(xmax * 2) / 2, 17.5])
+        xmin = np.min([np.floor(xmin * 2) / 2, 16])
+        xmax = np.max([np.ceil(xmax * 2) / 2, 16])
 
         xs = np.linspace(xmin, xmax, 1000)
 
@@ -345,26 +339,25 @@ def plot_final_pressures(data_setup, data_results, fname):
         p_dsi,  = axes.flat[i].plot(xs, dsi_density, c=C_DSI, label="DSI", zorder=5, lw=1.2)
 
         tufte_axis(axes.flat[i], bnds_x=(xmin, xmax), bnds_y=(ymin, ymax))
-        axes.flat[i].set_title(f"Well {i+1}", fontsize=LABEL_SIZE)
+        axes.flat[i].set_title(r"$\texttt{WELL " + str(i+1) + r"}$")
         axes.flat[i].set_box_aspect(1)
 
     for ax in axes[-1]:
-        ax.set_xlabel(LABEL_PRES, fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_PRES)
 
     for ax in axes[:, 0]:
-        ax.set_ylabel(LABEL_PROB, fontsize=LABEL_SIZE)
+        ax.set_ylabel(LABEL_PROB)
 
     handles = [p_truth, p_pri, p_pcn, p_lmap, p_dsi]
-    plt.figlegend(handles=handles, loc="lower center", ncols=5, 
-                  frameon=False, fontsize=LEGEND_SIZE)
+    plt.figlegend(handles=handles, loc="lower center", ncols=5, frameon=False)
 
-    plt.subplots_adjust(left=0.1,bottom=0.1, right=0.95, top=0.95)
+    plt.subplots_adjust(left=0.1, bottom=0.12, right=0.95, top=0.95)
     plt.savefig(fname)
 
 
 def plot_sample_comparison(data_setup, data_results, fname):
 
-    _, axes = plt.subplots(3, 3, figsize=(0.75*FULL_WIDTH, 0.8*FULL_WIDTH))
+    _, axes = plt.subplots(3, 3, figsize=(0.75*FULL_WIDTH, 0.85*FULL_WIDTH))
 
     cmap = mpl.colormaps["Blues"].resampled(1000)
     cmap = cmap(np.linspace(0.25, 0.9, 7))
@@ -381,10 +374,10 @@ def plot_sample_comparison(data_setup, data_results, fname):
 
         xmin = np.min([m-5*s for m, s in zip(means, stds)])
         xmax = np.max([m+5*s for m, s in zip(means, stds)])
-        xmin = np.round(xmin * 2) / 2
-        xmax = np.round(xmax * 2) / 2
-        xmin = min(xmin, 14.5)
-        xmax = max(xmax, 17.5)
+        xmin = np.floor(xmin * 2) / 2
+        xmax = np.ceil(xmax * 2) / 2
+        xmin = min(xmin, 16)
+        xmax = max(xmax, 16)
         xs = np.linspace(xmin, xmax, 1000)
         
         pri_preds = data_results["pri_preds"][well_num, :, -1]
@@ -407,7 +400,7 @@ def plot_sample_comparison(data_setup, data_results, fname):
         for n, (m, s) in enumerate(zip(means, stds)):
             
             dsi_density = stats.norm(m, s).pdf(xs)
-            label = f"DSI ($l={DSI_SAMPLES[n]}$)"
+            label = f"DSI ($\ell={DSI_SAMPLES[n]}$)"
             p, = axes.flat[i].plot(xs, dsi_density, c=cmap[n], label=label, lw=1.2)
             
             if np.max(dsi_density) > ymax:
@@ -418,17 +411,15 @@ def plot_sample_comparison(data_setup, data_results, fname):
 
         axes.flat[i].set_box_aspect(1)
         tufte_axis(axes.flat[i], bnds_x=(xmin, xmax), bnds_y=(ymin, np.ceil(ymax)))
-        axes.flat[i].set_title(f"Well {i+1}", fontsize=LABEL_SIZE)
+        axes.flat[i].set_title(r"$\texttt{WELL " + str(i+1) + r"}$")
 
     for ax in axes[:, 0]:
-        ax.set_ylabel(LABEL_PROB, fontsize=LABEL_SIZE)
+        ax.set_ylabel(LABEL_PROB)
 
     for ax in axes[-1]:
-        ax.set_xlabel(LABEL_PRES, fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_PRES)
 
-    plt.figlegend(handles=handles, loc="lower center", ncols=5, 
-                  frameon=False, fontsize=TICK_SIZE)
-
+    plt.figlegend(handles=handles, loc="lower center", ncols=5, frameon=False, fontsize=10)
     plt.subplots_adjust(left=0.1, bottom=0.13, right=0.95, top=0.95)
     plt.savefig(fname)
 

@@ -10,13 +10,7 @@ from scipy import stats
 from setup import *
 
 
-plt.rc("text", usetex=True)
-plt.rc("font", family="serif")
-
-TITLE_SIZE = 16
-LABEL_SIZE = 12
-LEGEND_SIZE = 10
-TICK_SIZE = 10
+plt.style.use("../paperstyle.mplstyle")
 
 LIMS_XS = (0, 6000)
 LIMS_TS = (0, 2)
@@ -37,18 +31,18 @@ LABEL_X2 = "$x_{2}$ [m]"
 LABEL_TEMP = "Temperature [$^\circ$C]"
 LABEL_TIME = "Time [Years]"
 LABEL_ELEV = "Elevation [m]"
-LABEL_PERM = "log$_{10}$(Permeability) [log$_{10}$(m$^2$)]"
+LABEL_PERM = "log$_{10}$(Perm) [log$_{10}$(m$^2$)]"
 LABEL_PRES = "Pressure [MPa]"
 LABEL_ENTH = "Enthalpy [kJ kg$^{-1}$]"
-LABEL_UPFLOW = "Upflow [kg s$^{-1}$ m$^{-3}$]"
+LABEL_UPFLOW = "Upflow [kg s$^{-1}$ m$^{-2}$]"
 LABEL_PROB = "Probability Density"
 
 COL_CUR_WELLS = "royalblue"
 COL_NEW_WELLS = "firebrick"
 
-COL_TEMP = "coral"
-COL_PRES = "lightskyblue"
-COL_ENTH = "lightgreen"
+COL_TEMP = "tab:orange"
+COL_PRES = "cornflowerblue"
+COL_ENTH = "tab:green"
 COL_CAP = "peru"
 
 COL_GRID = "darkgrey"
@@ -151,8 +145,7 @@ def plot_colourbar(cmap, vmin, vmax, label, fname, power=False):
     
     _, ax = plt.subplots(figsize=(2.5, 2.5))
     m = ax.pcolormesh(np.zeros((10, 10)), cmap=cmap, vmin=vmin, vmax=vmax)
-    cbar = plt.colorbar(m, ax=ax)
-    cbar.set_label(label, fontsize=LABEL_SIZE)
+    cbar = plt.colorbar(m, ax=ax, label=label)
 
     if power:
         cbar.formatter.set_powerlimits((0, 0))
@@ -187,15 +180,15 @@ def plot_grid_layer(mesh, cur_well_centres, new_well_centres, fname):
     for i, (x, y) in enumerate(cur_well_centres):
         ax.scatter(x, y, s=20, c=COL_CUR_WELLS)
         plt.text(x-360, y+160, s=get_well_name(i), 
-                 color=COL_CUR_WELLS, fontsize=TICK_SIZE)
+                 color=COL_CUR_WELLS, fontsize=12)
     
     for i, (x, y) in enumerate(new_well_centres):
         ax.scatter(x, y, s=20, c=COL_NEW_WELLS)
         plt.text(x-360, y+160, s=get_well_name(len(cur_well_centres)+i), 
-                 color=COL_NEW_WELLS, fontsize=TICK_SIZE)
+                 color=COL_NEW_WELLS, fontsize=12)
     
-    ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
-    ax.set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
+    ax.set_xlabel(LABEL_X1)
+    ax.set_ylabel(LABEL_X2)
     
     for s in ax.spines.values():
         s.set_edgecolor(COL_GRID)
@@ -204,7 +197,7 @@ def plot_grid_layer(mesh, cur_well_centres, new_well_centres, fname):
     ax.set_ylim(LIMS_XS)
     ax.set_xticks(TICKS_XS)
     ax.set_yticks(TICKS_XS)
-    ax.tick_params(labelsize=TICK_SIZE, length=0)
+    ax.tick_params(length=0)
     ax.set_facecolor(COL_DEEP)
     
     plt.tight_layout()
@@ -245,7 +238,7 @@ def plot_truth(mesh, fem_mesh, temps, logks, fname):
 
 def plot_true_upflows(mesh: lm.mesh, upflows, fname):
 
-    fig, ax = plt.subplots(1, 1, figsize=(3.5, 2.5))
+    fig, ax = plt.subplots(1, 1, figsize=(4.0, 3.2))
     polys = get_layer_polys(mesh, cmap=CMAP_UPFLOW)
     polys.set_clim(0, 2.75e-4)
 
@@ -258,11 +251,10 @@ def plot_true_upflows(mesh: lm.mesh, upflows, fname):
     ax.set_xticks(LIMS_XS)
     ax.set_yticks(LIMS_XS)
     ax.tick_params(which="both", bottom=False, left=False)
-    ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
-    ax.set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
+    ax.set_xlabel(LABEL_X1)
+    ax.set_ylabel(LABEL_X2)
 
     cbar = fig.colorbar(p, ax=ax, label=LABEL_UPFLOW)
-    cbar.ax.tick_params(labelsize=TICK_SIZE)
     cbar.ax.ticklabel_format(style="sci", scilimits=(0, 0))
 
     plt.tight_layout()
@@ -333,24 +325,24 @@ def plot_data(elev, time, temp, pres, enth,
 
     _, axes = plt.subplots(1, 3, figsize=(7.5, 2.5))
 
-    axes[0].plot(temp, elev, c="k", zorder=2)
-    axes[1].plot(time, pres, c="k", zorder=2)
-    axes[2].plot(time, enth, c="k", zorder=2)
+    axes[0].plot(temp, elev, c="k", lw=1.5, zorder=2)
+    axes[1].plot(time, pres, c="k", lw=1.5, zorder=2)
+    axes[2].plot(time, enth, c="k", lw=1.5, zorder=2)
 
-    axes[0].scatter(temp_obs, elev_obs, c="k", s=10, zorder=2)
-    axes[1].scatter(time_obs, pres_obs, c="k", s=10, zorder=2)
-    axes[2].scatter(time_obs, enth_obs, c="k", s=10, zorder=2)
+    axes[0].scatter(temp_obs, elev_obs, c="k", s=6, zorder=2)
+    axes[1].scatter(time_obs, pres_obs, c="k", s=6, zorder=2)
+    axes[2].scatter(time_obs, enth_obs, c="k", s=6, zorder=2)
 
-    axes[1].axvline(1, ls="--", c="gray", ymin=1/12, ymax=11/12, zorder=1)
-    axes[2].axvline(1, ls="--", c="gray", ymin=1/12, ymax=11/12, zorder=1)
+    axes[1].axvline(1, ls="--", c="gray", lw=1.5, ymin=1/12, ymax=11/12, zorder=1)
+    axes[2].axvline(1, ls="--", c="gray", lw=1.5, ymin=1/12, ymax=11/12, zorder=1)
 
-    axes[0].set_xlabel(LABEL_TEMP, fontsize=LABEL_SIZE)
-    axes[1].set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
-    axes[2].set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
+    axes[0].set_xlabel(LABEL_TEMP)
+    axes[1].set_xlabel(LABEL_TIME)
+    axes[2].set_xlabel(LABEL_TIME)
 
-    axes[0].set_ylabel(LABEL_ELEV, fontsize=LABEL_SIZE)
-    axes[1].set_ylabel(LABEL_PRES, fontsize=LABEL_SIZE)
-    axes[2].set_ylabel(LABEL_ENTH, fontsize=LABEL_SIZE)
+    axes[0].set_ylabel(LABEL_ELEV)
+    axes[1].set_ylabel(LABEL_PRES)
+    axes[2].set_ylabel(LABEL_ENTH)
 
     for ax in axes:
         ax.set_box_aspect(1)
@@ -368,7 +360,7 @@ def plot_data(elev, time, temp, pres, enth,
 
 def plot_upflows(mesh: lm.mesh, upflows, fname):
 
-    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 0.25*FULL_WIDTH), 
+    fig, axes = plt.subplots(1, 4, figsize=(FULL_WIDTH, 0.255*FULL_WIDTH), 
                              layout="constrained", sharey=True)
     
     polys = get_layer_polys(mesh, cmap=CMAP_UPFLOW)
@@ -377,8 +369,8 @@ def plot_upflows(mesh: lm.mesh, upflows, fname):
     for i, ax in enumerate(axes.flat):
 
         polys_i = deepcopy(polys)
-        p = ax.add_collection(polys_i)
         polys_i.set_array(upflows[i])
+        p = ax.add_collection(polys_i)
 
         ax.set_xlim(LIMS_XS)
         ax.set_ylim(LIMS_XS)
@@ -386,11 +378,10 @@ def plot_upflows(mesh: lm.mesh, upflows, fname):
         ax.set_xticks(LIMS_XS)
         ax.set_yticks(LIMS_XS)
         ax.tick_params(which="both", bottom=False, left=False)
-        ax.set_xlabel(LABEL_X1, fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_X1)
 
-    axes[0].set_ylabel(LABEL_X2, fontsize=LABEL_SIZE)
+    axes[0].set_ylabel(LABEL_X2)
     cbar = fig.colorbar(p, ax=axes[-1], label=LABEL_UPFLOW)
-    cbar.ax.tick_params(labelsize=TICK_SIZE)
     cbar.ax.ticklabel_format(style="sci", scilimits=(0, 0))
 
     plt.savefig(fname)
@@ -401,7 +392,7 @@ def plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t,
                          temp_dsi, pres_dsi, enth_dsi,
                          pres_obs, enth_obs, well_nums, fname):
 
-    fig, axes = plt.subplots(3, 4, figsize=(10, 7.8))
+    fig, axes = plt.subplots(3, 4, figsize=(10, 9), sharey="row")
 
     ts_crse = data_handler_crse.ts / (SECS_PER_WEEK * 52)
     ts_fine = data_handler_fine.ts / (SECS_PER_WEEK * 52)
@@ -419,20 +410,20 @@ def plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t,
         j0 = 2*i
         j1 = 2*i+1
 
-        axes[0][j0].plot(temp_pri[i].T, elevs_crse[i], c=COL_TEMP, lw=0.5, alpha=0.4, zorder=1)
-        axes[0][j1].plot(temp_dsi[i].T, elevs_crse[i], c=COL_TEMP, lw=0.5, alpha=0.4, zorder=1)
+        axes[0][j0].plot(temp_pri[i].T, elevs_crse[i], c=COL_TEMP, lw=1.0, alpha=0.1, zorder=1)
+        axes[0][j1].plot(temp_dsi[i].T, elevs_crse[i], c=COL_TEMP, lw=1.0, alpha=0.1, zorder=1)
 
         axes[0][j0].plot(temp_qs_pri[i].T, elevs_crse[i], c="dimgrey", lw=1.0, zorder=2)
         axes[0][j1].plot(temp_qs_dsi[i].T, elevs_crse[i], c="dimgrey", lw=1.0, zorder=2)
             
-        axes[1][j0].plot(ts_crse, pres_pri[i].T, c=COL_PRES, lw=0.5, alpha=0.4, zorder=1)
-        axes[1][j1].plot(ts_crse, pres_dsi[i].T, c=COL_PRES, lw=0.5, alpha=0.4, zorder=1)
+        axes[1][j0].plot(ts_crse, pres_pri[i].T, c=COL_PRES, lw=1.0, alpha=0.1, zorder=1)
+        axes[1][j1].plot(ts_crse, pres_dsi[i].T, c=COL_PRES, lw=1.0, alpha=0.1, zorder=1)
 
         axes[1][j0].plot(ts_crse, pres_qs_pri[i].T, c="dimgrey", lw=1.0, zorder=2)
         axes[1][j1].plot(ts_crse, pres_qs_dsi[i].T, c="dimgrey", lw=1.0, zorder=2)
 
-        axes[2][j0].plot(ts_crse, enth_pri[i].T, c=COL_ENTH, lw=0.5, alpha=0.4, zorder=1)
-        axes[2][j1].plot(ts_crse, enth_dsi[i].T, c=COL_ENTH, lw=0.5, alpha=0.4, zorder=1)
+        axes[2][j0].plot(ts_crse, enth_pri[i].T, c=COL_ENTH, lw=1.0, alpha=0.1, zorder=1)
+        axes[2][j1].plot(ts_crse, enth_dsi[i].T, c=COL_ENTH, lw=1.0, alpha=0.1, zorder=1)
 
         axes[2][j0].plot(ts_crse, enth_qs_pri[i].T, c="dimgrey", lw=1.0, zorder=2)
         axes[2][j1].plot(ts_crse, enth_qs_dsi[i].T, c="dimgrey", lw=1.0, zorder=2)
@@ -473,24 +464,24 @@ def plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t,
         tufte_axis(axes[2][j0], bnds_x=(0, 2), bnds_y=(E_MIN, E_MAX), xticks=(0, 1, 2), yticks=(E_MIN, 0.5*(E_MIN+E_MAX), E_MAX))
         tufte_axis(axes[2][j1], bnds_x=(0, 2), bnds_y=(E_MIN, E_MAX), xticks=(0, 1, 2), yticks=(E_MIN, 0.5*(E_MIN+E_MAX), E_MAX))
 
-        axes[0][j0].set_title("Prior", fontsize=LABEL_SIZE)
-        axes[0][j1].set_title("DSI", fontsize=LABEL_SIZE)
+        axes[0][j0].set_title("Prior")
+        axes[0][j1].set_title("DSI")
 
-        axes[0][j0].set_xlabel(LABEL_TEMP, fontsize=LABEL_SIZE)
-        axes[0][j1].set_xlabel(LABEL_TEMP, fontsize=LABEL_SIZE)
+        axes[0][j0].set_xlabel(LABEL_TEMP)
+        axes[0][j1].set_xlabel(LABEL_TEMP)
 
-        axes[1][j0].set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
-        axes[1][j1].set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
+        axes[1][j0].set_xlabel(LABEL_TIME)
+        axes[1][j1].set_xlabel(LABEL_TIME)
 
-        axes[2][j0].set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
-        axes[2][j1].set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
+        axes[2][j0].set_xlabel(LABEL_TIME)
+        axes[2][j1].set_xlabel(LABEL_TIME)
 
-    axes[0][0].set_ylabel(LABEL_ELEV, fontsize=LABEL_SIZE)
-    axes[1][0].set_ylabel(LABEL_PRES, fontsize=LABEL_SIZE)
-    axes[2][0].set_ylabel(LABEL_ENTH, fontsize=LABEL_SIZE)
+    axes[0][0].set_ylabel(LABEL_ELEV)
+    axes[1][0].set_ylabel(LABEL_PRES)
+    axes[2][0].set_ylabel(LABEL_ENTH)
 
-    fig.text(0.27, 0.975, f"Well {well_nums[0]+1}", ha="center", va="top", fontsize=LABEL_SIZE)
-    fig.text(0.76, 0.975, f"Well {well_nums[1]+1}", ha="center", va="top", fontsize=LABEL_SIZE)
+    fig.text(0.31, 0.975, get_well_name(well_nums[0]), ha="center", va="top", fontsize=16)
+    fig.text(0.76, 0.975, get_well_name(well_nums[1]), ha="center", va="top", fontsize=16)
 
     for ax in axes.flat:
         ax.set_box_aspect(1)
@@ -511,7 +502,7 @@ def plot_transformation(pres_t, pres_obs, pres_dsi, pres_trn, well_nums, fname):
     pres_qs_dsi = [np.quantile(p, q=(0.025, 0.975), axis=0) for p in pres_dsi]
     pres_qs_trn = [np.quantile(p, q=(0.025, 0.975), axis=0) for p in pres_trn]
 
-    _, axes = plt.subplots(2, 4, figsize=(10, 5))
+    _, axes = plt.subplots(2, 4, figsize=(10, 5), sharex=True, sharey=True)
 
     for i in range(4):
 
@@ -534,13 +525,13 @@ def plot_transformation(pres_t, pres_obs, pres_dsi, pres_trn, well_nums, fname):
         tufte_axis(ax, bnds_x=(0, 2), bnds_y=(1, 9), xticks=(0, 1, 2), yticks=(1, 5, 9))
         
     for ax in axes[-1]:
-        ax.set_xlabel(LABEL_TIME, fontsize=LABEL_SIZE)
+        ax.set_xlabel(LABEL_TIME)
 
-    axes[0][0].set_ylabel(LABEL_PRES, fontsize=LABEL_SIZE)
-    axes[1][0].set_ylabel(LABEL_PRES, fontsize=LABEL_SIZE)
+    axes[0][0].set_ylabel(LABEL_PRES)
+    axes[1][0].set_ylabel(LABEL_PRES)
 
     for i, n in enumerate(well_nums):
-        axes[0][i].set_title(f"Well {n+1}", fontsize=LABEL_SIZE)
+        axes[0][i].set_title(get_well_name(n))
 
     plt.tight_layout()
     plt.savefig(fname)
@@ -558,22 +549,22 @@ def plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n,
 
     handles = []
 
-    t_min = [20, 20, 20, 20]
-    t_max = [250, 250, 300, 250]
+    t_min = [115, 20, 20, 40]
+    t_max = [175, 90, 180, 150]
 
-    p_min = [4, 2, 5, 5]
-    p_max = [9, 9, 10, 7]
+    p_min = [5, 2, 6, 5]
+    p_max = [7.5, 5.5, 10, 7]
 
-    e_min = [800, 400, 700, 100]
-    e_max = [1100, 800, 1400, 1100]
+    e_min = [900, 400, 700, 100]
+    e_max = [1100, 600, 1200, 700]
 
     xs_temp = [np.linspace(t0, t1, 1000) for (t0, t1) in zip(t_min, t_max)]
     xs_pres = [np.linspace(p0, p1, 1000) for (p0, p1) in zip(p_min, p_max)]
     xs_enth = [np.linspace(e0, e1, 1000) for (e0, e1) in zip(e_min, e_max)]
 
-    _, axes = plt.subplots(3, 4, figsize=(10, 8))
+    fig, axes = plt.subplots(3, 4, figsize=(10, 9.5))
 
-    t_den_max = [0.2, 0.25, 0.40, 0.25]
+    t_den_max = [0.2, 0.30, 0.40, 0.25]
     p_den_max = [9, 6, 10, 24]
     e_den_max = [0.1, 0.1, 0.06, 0.07]
 
@@ -601,7 +592,7 @@ def plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n,
 
         for k, (m, s) in enumerate(zip(temp_ms, temp_ss)):
             density = stats.norm(m[j], s[j]).pdf(xs_temp[j])
-            p, = axes[0][j].plot(xs_temp[j], density, c=cmap[k], lw=1.2, zorder=2, label=f"DSI ($l={n_samples[k]}$)")
+            p, = axes[0][j].plot(xs_temp[j], density, c=cmap[k], lw=1.2, zorder=2, label=f"DSI ($\ell={n_samples[k]}$)")
             if j == 0:
                 handles.append(p)
 
@@ -622,15 +613,16 @@ def plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n,
         tufte_axis(axes[1][i], bnds_x=(p_min[i], p_max[i]), bnds_y=(0, np.ceil(p_den_max[i])))
         tufte_axis(axes[2][i], bnds_x=(e_min[i], e_max[i]), bnds_y=(0, e_den_max[i]))
 
-        axes[0][i].set_title(f"Well {well_nums[i]+1}", fontsize=LABEL_SIZE)
-        axes[0][i].set_xlabel(LABEL_TEMP, fontsize=LABEL_SIZE)
-        axes[1][i].set_xlabel(LABEL_PRES, fontsize=LABEL_SIZE)
-        axes[2][i].set_xlabel(LABEL_ENTH, fontsize=LABEL_SIZE)
+        axes[0][i].set_title(get_well_name(well_nums[i]))
+        axes[0][i].set_xlabel(LABEL_TEMP)
+        axes[1][i].set_xlabel(LABEL_PRES)
+        axes[2][i].set_xlabel(LABEL_ENTH)
     
     for i in range(3):
-        axes[i][0].set_ylabel(LABEL_PROB, fontsize=LABEL_SIZE)
+        axes[i][0].set_ylabel(LABEL_PROB)
 
-    plt.figlegend(handles=handles, loc="lower center", ncols=4, frameon=False, fontsize=TICK_SIZE)
+    fig.align_labels()
+    plt.figlegend(handles=handles, loc="lower center", ncols=4, frameon=False, fontsize=14)
     plt.subplots_adjust(left=0.1, bottom=0.13, right=0.95, top=0.95)
     plt.savefig(fname)
 
