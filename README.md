@@ -9,7 +9,7 @@ This repository contains code written as part of the paper "Data Space Inversion
 ```
 @misc{deBeer2024,
     title={Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models}, 
-    author={Alex de Beer and Andrew Power and Daniel Wong and Ken Dekkers and Michael Gravatt and John P. O'Sullivan and Michael J. O'Sullivan and Oliver J. Maclaren and Ruanui Nicholson},
+    author={Alex de Beer and Andrew Power and Daniel Wong and Ken Dekkers and Michael Gravatt and Elvar K. Bjarkason and John P. O'Sullivan and Michael J. O'Sullivan and Oliver J. Maclaren and Ruanui Nicholson},
     year={2024},
     eprint={2407.15401},
     archivePrefix={arXiv},
