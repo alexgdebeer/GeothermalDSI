@@ -69,24 +69,29 @@ class Well():
 
 class PermField():
 
-    def __init__(self, std, grf, level_func):
+    def __init__(self, std, grf, level_func_perm, level_func_por):
 
         self.std = std
         self.grf = grf
-        self.level_func = level_func
+        self.level_func_perm = level_func_perm
+        self.level_func_por = level_func_por
         self.n_params = len(self.grf.points)
 
-    def level_set(self, perms):
-        """Applies the level set function to a draw from a GRF."""
-
-        return np.array([self.level_func(p) for p in perms])
+    def level_set_perm(self, ps):
+        return np.array([self.level_func_perm(p) for p in ps])
+    
+    def level_set_por(self, ps):
+        return np.array([self.level_func_por(p) for p in ps])
     
     def sample(self):
-        """Generates a random sample of permeabilities."""
+        """Generates a random sample of permeabilities and porosities."""
 
         ws = np.random.normal(size=self.n_params)
-        perms = self.level_set(self.std * self.grf.transform(ws))
-        return perms
+        ps = self.std * self.grf.transform(ws)
+
+        perms = self.level_set_perm(ps)
+        pors = self.level_set_por(ps)
+        return perms, pors
 
 
 class UpflowField():
@@ -163,8 +168,8 @@ class ClayCap():
         to it.
         """
 
-        rs = np.sqrt(((np.sin(phis) * np.cos(thetas) / width_h)**2
-                       + (np.sin(phis) * np.sin(thetas) / width_h)**2
+        rs = np.sqrt(((np.sin(phis) * np.cos(thetas) / width_h) ** 2
+                       + (np.sin(phis) * np.sin(thetas) / width_h) ** 2
                        + (np.cos(phis) / width_v)**2) ** -1)
         
         for n, m in product(range(self.n_terms), range(self.n_terms)):
@@ -204,15 +209,24 @@ class ClayCap():
 class Model():
     """Base class for models, with a set of default methods."""
 
-    def __init__(self, path: str, mesh: Mesh, perms: np.ndarray, 
-                 wells: list, upflows: list, 
-                 dt: float, tmax: float):
+    def __init__(
+        self, 
+        path: str, 
+        mesh: Mesh, 
+        perms: np.ndarray, 
+        pors: np.ndarray,
+        wells: list, 
+        upflows: list, 
+        dt: float, 
+        tmax: float
+    ):
 
         self.ns_path = f"{path}_NS"
         self.pr_path = f"{path}_PR"
         self.incon_path = f"{path}_incon"
 
         self.mesh = mesh 
+        self.pors = pors
         self.perms = perms 
         self.wells = wells
         self.upflows = upflows
@@ -297,7 +311,7 @@ class Model():
         
         self.ns_model["rock"] = {"types": [{
             "name": f"{c.index}",
-            "porosity": POROSITY, 
+            "porosity": self.pors[c.index], 
             "permeability": 10.0 ** self.perms[c.index],
             "cells": [c.index],
             "wet_conductivity": CONDUCTIVITY,

@@ -34,9 +34,9 @@ class Prior():
 
     def sample(self):
 
-        lnperms_ext = self.grf_ext.sample()
-        lnperms_cap = self.grf_cap.sample()
-        lnperms_flt = self.grf_flt.sample()
+        lnperms_ext, pors_ext = self.grf_ext.sample()
+        lnperms_cap, pors_cap = self.grf_cap.sample()
+        lnperms_flt, pors_flt = self.grf_flt.sample()
 
         cap_cells = self.cap.sample()
 
@@ -45,16 +45,21 @@ class Prior():
         lnperms = np.copy(lnperms_ext)
         lnperms[fault_cells] = lnperms_flt[fault_cells]
         lnperms[cap_cells] = lnperms_cap[cap_cells]
+
+        pors = np.copy(pors_ext)
+        pors[fault_cells] = pors_flt[fault_cells]
+        pors[cap_cells] = pors_cap[cap_cells]
         
         upflow_samples = self.grf_upflow.sample() * self.upflow_weightings
         upflows = np.zeros(self.mesh.m.num_columns)
         upflows[fault_cols] = upflow_samples[fault_cols]
         
-        return np.concatenate((lnperms, upflows))
+        return np.concatenate((lnperms, pors, upflows))
     
     def split(self, p_i):
 
         logks = p_i[:self.mesh.m.num_cells]
+        pors = p_i[self.mesh.m.num_cells:2*self.mesh.m.num_cells]
         mass_rates_t = p_i[-self.mesh.m.num_columns:]
 
         upflows = []
@@ -63,4 +68,4 @@ class Prior():
                 upflow = MassUpflow(col.cell[-1], rate)
                 upflows.append(upflow)
         
-        return logks, upflows
+        return logks, pors, upflows

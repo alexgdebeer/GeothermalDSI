@@ -7,7 +7,7 @@ from src.grfs import *
 from src.models import *
 from src.priors import Prior
 
-np.random.seed(4)
+np.random.seed(3)
 
 
 MODEL_FOLDER = "models"
@@ -48,18 +48,18 @@ mesh_crse = Mesh(MESH_PATH_CRSE)
 mesh_fine = Mesh(MESH_PATH_FINE)
 
 cur_well_centres = [
-    (1800, 3100), 
-    (4000, 3000), 
+    (1400, 1500), 
+    (2100, 3900),
     (2800, 1900), 
-    (2100, 3900), 
-    (3800, 2100), 
+    (3000, 3000),  
     (3300, 4100), 
-    (1400, 1500)
+    (4000, 3000), 
+    (4600, 4600)
 ]
 
 new_well_centres = [
-    (3000, 3000), 
-    (4600, 4600)
+    (1800, 3100), 
+    (3800, 2100)
 ]
 
 well_centres = cur_well_centres + new_well_centres
@@ -96,25 +96,39 @@ clay_cap_fine = ClayCap(mesh_fine, bounds_geom_cap, n_terms, coef_sds)
 Permeability fields
 """
 
-def levels_ext(p):
-    """Level set mapping for all non-fault and non-cap regions."""
+def perm_levels_ext(p):
     if   p < -1.5: return -15.5
     elif p < -0.5: return -15.0
     elif p <  0.5: return -14.5
     elif p <  1.5: return -14.0
     else: return -13.5
 
-def levels_flt(p):
-    """Level set mapping for fault."""
+def perm_levels_flt(p):
     if   p < -0.5: return -13.5
     elif p <  0.5: return -13.0
     else: return -12.5
 
-def levels_cap(p):
-    """Level set mapping for clay cap."""
+def perm_levels_cap(p):
     if   p < -0.5: return -17.0
     elif p <  0.5: return -16.5
     else: return -16.0
+
+def por_levels_ext(p):
+    if   p < -1.5: return 0.10
+    elif p < -0.5: return 0.10
+    elif p <  0.5: return 0.15
+    elif p <  1.5: return 0.15
+    else: return 0.20
+
+def por_levels_flt(p):
+    if   p < -0.5: return 0.20
+    elif p <  0.5: return 0.25
+    else: return 0.30
+
+def por_levels_cap(p):
+    if   p < -0.5: return 0.05
+    elif p <  0.5: return 0.05
+    else: return 0.10
 
 std_ext = 1.25
 std_flt = 0.75
@@ -126,13 +140,13 @@ kernel_perm = SquaredExp(l_perm)
 grf_perm_crse = GRF3D(mesh_crse, kernel_perm, folder=GRF_FOLDER_3D_CRSE)
 grf_perm_fine = GRF3D(mesh_fine, kernel_perm, folder=GRF_FOLDER_3D_FINE)
 
-perm_field_ext_crse = PermField(std_ext, grf_perm_crse, levels_ext)
-perm_field_flt_crse = PermField(std_flt, grf_perm_crse, levels_flt)
-perm_field_cap_crse = PermField(std_cap, grf_perm_crse, levels_cap)
+perm_field_ext_crse = PermField(std_ext, grf_perm_crse, perm_levels_ext, por_levels_ext)
+perm_field_flt_crse = PermField(std_flt, grf_perm_crse, perm_levels_flt, por_levels_flt)
+perm_field_cap_crse = PermField(std_cap, grf_perm_crse, perm_levels_cap, por_levels_cap)
 
-perm_field_ext_fine = PermField(std_ext, grf_perm_fine, levels_ext)
-perm_field_flt_fine = PermField(std_flt, grf_perm_fine, levels_flt)
-perm_field_cap_fine = PermField(std_cap, grf_perm_fine, levels_cap)
+perm_field_ext_fine = PermField(std_ext, grf_perm_fine, perm_levels_ext, por_levels_ext)
+perm_field_flt_fine = PermField(std_flt, grf_perm_fine, perm_levels_flt, por_levels_flt)
+perm_field_cap_fine = PermField(std_cap, grf_perm_fine, perm_levels_cap, por_levels_cap)
 
 """
 Fault
@@ -178,8 +192,8 @@ Ensemble functions
 
 def generate_particle(p_i, num):
     name = f"{MODEL_PATH_CRSE}_{num}"
-    logks, upflows = prior.split(p_i)
-    model = Model(name, mesh_crse, logks, wells_crse, upflows, dt, tmax)
+    logks, pors, upflows = prior.split(p_i)
+    model = Model(name, mesh_crse, logks, pors, wells_crse, upflows, dt, tmax)
     return model
 
 """
@@ -205,24 +219,20 @@ truth_dist = Prior(
 def generate_truth():
 
     p_t = truth_dist.sample()
-    logks_t, upflows_t = truth_dist.split(p_t)
+    logks_t, pors_t, upflows_t = truth_dist.split(p_t)
 
     model_t = Model(
         MODEL_PATH_FINE, mesh_fine, 
-        logks_t, wells_fine, upflows_t, dt, tmax
+        logks_t, pors_t, wells_fine, upflows_t, dt, tmax
     )
 
-    # grf_perm_fine.plot(logks_t)
-    # grf_perm_fine.slice_plot(logks_t)
+    grf_perm_fine.plot(logks_t)
+    grf_perm_fine.slice_plot(logks_t)
     
-    # if model_t.run() != ExitFlag.SUCCESS:
-    #     raise Exception("Truth failed to run.")
+    if model_t.run() != ExitFlag.SUCCESS:
+        raise Exception("Truth failed to run.")
 
     F_t, G_t = data_handler_fine.get_pr_data(model_t.pr_path)
-
-    # temps = data_handler_fine.get_full_temperatures(F_t)
-    # grf_perm_fine.plot(temps)
-    # grf_perm_fine.slice_plot(temps)
 
     np.save(P_TRUE_PATH, p_t)
     np.save(F_TRUE_PATH, F_t)

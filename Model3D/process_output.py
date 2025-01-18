@@ -43,7 +43,7 @@ def get_exitflag(log_path):
 
 if __name__ == "__main__":
     
-    Ne = 1000
+    Ne = 2000
 
     Fs = []
     Gs = []

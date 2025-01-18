@@ -3,6 +3,7 @@ import h5py
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib.collections import PolyCollection
+from matplotlib import patches
 import numpy as np
 import pyvista as pv
 from scipy import stats
@@ -19,16 +20,16 @@ LIMS_UPFLOW = (0, 2.75e-4)
 MIN_PERM = -17.0
 MAX_PERM = -12.5
 
-P_MIN, P_MAX = 3, 11
+P_MIN, P_MAX = 0.5, 10.5
 E_MIN, E_MAX = 100, 1500
-T_MIN, T_MAX = 20, 300
+T_MIN, T_MAX = 20, 320
 
 TICKS_XS = [0, 3000, 6000]
 TICKS_TS = [0, 1, 2]
 
 LABEL_X1 = "$x_{1}$ [m]"
 LABEL_X2 = "$x_{2}$ [m]"
-LABEL_TEMP = "Temperature [$^\circ$C]"
+LABEL_TEMP = r"Temperature [$^\circ$C]"
 LABEL_TIME = "Time [Years]"
 LABEL_ELEV = "Elevation [m]"
 LABEL_PERM = "log$_{10}$(Perm) [log$_{10}$(m$^2$)]"
@@ -52,16 +53,17 @@ CMAP_PERM = cmocean.cm.turbid.reversed()
 CMAP_UPFLOW = cmocean.cm.thermal
 CMAP_TEMP = cmocean.cm.balance
 
-PLOT_GRID = True
-PLOT_TRUTH = True
-PLOT_UPFLOWS = True
-PLOT_CAPS = True
-PLOT_PERMS = True
-PLOT_DATA = True
-PLOT_DSI_PREDICTIONS_A = True
-PLOT_DSI_PREDICTIONS_B = True
-PLOT_TRANSFORMATION = True
-PLOT_SAMPLE_COMP = True
+PLOT_GRID = False
+PLOT_TRUTH = False
+PLOT_UPFLOWS = False
+PLOT_CAPS = False
+PLOT_PERMS = False
+PLOT_DATA = False
+PLOT_PRIOR_PREDICTIONS = False 
+PLOT_DSI_PREDICTIONS_A = False
+PLOT_DSI_PREDICTIONS_B = False
+PLOT_TRANSFORMATION = False
+PLOT_SAMPLE_COMP = False
 
 FULL_WIDTH = 10
 
@@ -350,9 +352,9 @@ def plot_data(elev, time, temp, pres, enth,
     ymin = min(elev)
     ymax = max(elev)
 
-    tufte_axis(axes[0], bnds_x=(0, 250), bnds_y=(ymin, ymax))
-    tufte_axis(axes[1], bnds_x=LIMS_TS, bnds_y=(4, 8), xticks=TICKS_TS)
-    tufte_axis(axes[2], bnds_x=LIMS_TS, bnds_y=(600, 750), xticks=TICKS_TS)
+    # tufte_axis(axes[0], bnds_x=(0, 250), bnds_y=(ymin, ymax))
+    # tufte_axis(axes[1], bnds_x=LIMS_TS, bnds_y=(4, 8), xticks=TICKS_TS)
+    # tufte_axis(axes[2], bnds_x=LIMS_TS, bnds_y=(600, 750), xticks=TICKS_TS)
 
     plt.tight_layout()
     plt.savefig(fname)
@@ -387,6 +389,91 @@ def plot_upflows(mesh: lm.mesh, upflows, fname):
     plt.savefig(fname)
 
 
+def plot_prior_vs_dsi(elevs_crse, 
+                      temp_pri, pres_pri, enth_pri, 
+                      temp_dsi, pres_dsi, enth_dsi,
+                      well_nums, fname):
+
+    fig, axes = plt.subplots(3, 4, figsize=(10, 9), sharey="row")
+
+    ts_crse = data_handler_crse.ts / (SECS_PER_WEEK * 52)
+
+    forecast_p = patches.Rectangle(
+        xy=(1, P_MIN), 
+        width=1, 
+        height=P_MAX-P_MIN,
+        facecolor="gainsboro",
+        zorder=0
+    )
+    forecast_e = patches.Rectangle(
+        xy=(1, E_MIN), 
+        width=1, 
+        height=E_MAX-E_MIN, 
+        facecolor="gainsboro", 
+        zorder=0
+    )
+
+    zmin = min([min(elevs) for elevs in elevs_crse])
+    zmax = max([max(elevs) for elevs in elevs_crse])
+    
+    for i in range(2):
+
+        j0 = 2*i
+        j1 = 2*i+1
+
+        axes[0][j0].plot(temp_pri[i].T, elevs_crse[i], c=COL_TEMP, lw=1, alpha=0.5, zorder=1)
+        axes[0][j1].plot(temp_dsi[i].T, elevs_crse[i], c=COL_TEMP, lw=1, alpha=0.5, zorder=1)
+            
+        axes[1][j0].plot(ts_crse, pres_pri[i].T, c=COL_PRES, lw=1, alpha=0.5, zorder=1)
+        axes[1][j1].plot(ts_crse, pres_dsi[i].T, c=COL_PRES, lw=1, alpha=0.5, zorder=1)
+
+        axes[2][j0].plot(ts_crse, enth_pri[i].T, c=COL_ENTH, lw=1, alpha=0.5, zorder=1)
+        axes[2][j1].plot(ts_crse, enth_dsi[i].T, c=COL_ENTH, lw=1, alpha=0.5, zorder=1)
+
+        axes[1][j0].add_patch(deepcopy(forecast_p))
+        axes[1][j1].add_patch(deepcopy(forecast_p))
+
+        axes[2][j0].add_patch(deepcopy(forecast_e))
+        axes[2][j1].add_patch(deepcopy(forecast_e))
+
+        tufte_axis(axes[0][j0], bnds_x=(T_MIN, T_MAX), bnds_y=(zmin, zmax), xticks=(T_MIN, 0.5*(T_MIN+T_MAX), T_MAX), yticks=(zmin, 0.5*(zmin+zmax), zmax), gap=0.05)
+        tufte_axis(axes[0][j1], bnds_x=(T_MIN, T_MAX), bnds_y=(zmin, zmax), xticks=(T_MIN, 0.5*(T_MIN+T_MAX), T_MAX), yticks=(zmin, 0.5*(zmin+zmax), zmax), gap=0.05)
+
+        tufte_axis(axes[1][j0], bnds_x=(0, 2), bnds_y=(P_MIN, P_MAX), xticks=(0, 1, 2), yticks=(P_MIN, 0.5*(P_MIN+P_MAX), P_MAX), gap=0.05)
+        tufte_axis(axes[1][j1], bnds_x=(0, 2), bnds_y=(P_MIN, P_MAX), xticks=(0, 1, 2), yticks=(P_MIN, 0.5*(P_MIN+P_MAX), P_MAX), gap=0.05)
+
+        tufte_axis(axes[2][j0], bnds_x=(0, 2), bnds_y=(E_MIN, E_MAX), xticks=(0, 1, 2), yticks=(E_MIN, 0.5*(E_MIN+E_MAX), E_MAX), gap=0.05)
+        tufte_axis(axes[2][j1], bnds_x=(0, 2), bnds_y=(E_MIN, E_MAX), xticks=(0, 1, 2), yticks=(E_MIN, 0.5*(E_MIN+E_MAX), E_MAX), gap=0.05)
+
+        axes[0][j0].set_title("Prior")
+        axes[0][j1].set_title("DSI")
+
+        axes[0][j0].set_xlabel(LABEL_TEMP)
+        axes[0][j1].set_xlabel(LABEL_TEMP)
+
+        axes[1][j0].set_xlabel(LABEL_TIME)
+        axes[1][j1].set_xlabel(LABEL_TIME)
+
+        axes[2][j0].set_xlabel(LABEL_TIME)
+        axes[2][j1].set_xlabel(LABEL_TIME)
+
+    axes[0][0].set_ylabel(LABEL_ELEV)
+    axes[1][0].set_ylabel(LABEL_PRES)
+    axes[2][0].set_ylabel(LABEL_ENTH)
+
+    fig.text(0.31, 0.975, get_well_name(well_nums[0]), ha="center", va="top", fontsize=16)
+    fig.text(0.76, 0.975, get_well_name(well_nums[1]), ha="center", va="top", fontsize=16)
+
+    for ax in axes.flat:
+        ax.set_box_aspect(1)
+
+    fig.align_labels()
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.92)
+    plt.savefig(fname)
+
+
 def plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t, 
                          elevs_crse, temp_pri, pres_pri, enth_pri, 
                          temp_dsi, pres_dsi, enth_dsi,
@@ -404,6 +491,21 @@ def plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t,
     temp_qs_dsi = [np.quantile(t, q=(0.025, 0.975), axis=0) for t in temp_dsi]
     pres_qs_dsi = [np.quantile(p, q=(0.025, 0.975), axis=0) for p in pres_dsi]
     enth_qs_dsi = [np.quantile(e, q=(0.025, 0.975), axis=0) for e in enth_dsi]
+
+    forecast_p = patches.Rectangle(
+        xy=(1, P_MIN), 
+        width=1, 
+        height=P_MAX-P_MIN,
+        facecolor="gainsboro",
+        zorder=0
+    )
+    forecast_e = patches.Rectangle(
+        xy=(1, E_MIN), 
+        width=1, 
+        height=E_MAX-E_MIN, 
+        facecolor="gainsboro", 
+        zorder=0
+    )
     
     for i in range(2):
 
@@ -446,26 +548,26 @@ def plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t,
             axes[2][j0].scatter(prod_obs_ts / (SECS_PER_WEEK * 52), enth_obs[i], s=6, c="k", zorder=3)
             axes[2][j1].scatter(prod_obs_ts / (SECS_PER_WEEK * 52), enth_obs[i], s=6, c="k", zorder=3)
 
-        axes[1][j0].axvline(1, ls="--", c="gray", lw=1, ymin=1/12, ymax=11/12, zorder=0)
-        axes[1][j1].axvline(1, ls="--", c="gray", lw=1, ymin=1/12, ymax=11/12, zorder=0)
+        axes[1][j0].add_patch(deepcopy(forecast_p))
+        axes[1][j1].add_patch(deepcopy(forecast_p))
 
-        axes[2][j0].axvline(1, ls="--", c="gray", lw=1, ymin=1/12, ymax=11/12, zorder=0)
-        axes[2][j1].axvline(1, ls="--", c="gray", lw=1, ymin=1/12, ymax=11/12, zorder=0)
+        axes[2][j0].add_patch(deepcopy(forecast_e))
+        axes[2][j1].add_patch(deepcopy(forecast_e))
 
         zmin = min(elevs_fine[i])
         zmax = max(elevs_fine[i])
 
-        tufte_axis(axes[0][j0], bnds_x=(T_MIN, T_MAX), bnds_y=(zmin, zmax), xticks=(T_MIN, 0.5*(T_MIN+T_MAX), T_MAX), yticks=(zmin, 0.5*(zmin+zmax), zmax))
-        tufte_axis(axes[0][j1], bnds_x=(T_MIN, T_MAX), bnds_y=(zmin, zmax), xticks=(T_MIN, 0.5*(T_MIN+T_MAX), T_MAX), yticks=(zmin, 0.5*(zmin+zmax), zmax))
+        tufte_axis(axes[0][j0], bnds_x=(T_MIN, T_MAX), bnds_y=(zmin, zmax), xticks=(T_MIN, 0.5*(T_MIN+T_MAX), T_MAX), yticks=(zmin, 0.5*(zmin+zmax), zmax), gap=0.05)
+        tufte_axis(axes[0][j1], bnds_x=(T_MIN, T_MAX), bnds_y=(zmin, zmax), xticks=(T_MIN, 0.5*(T_MIN+T_MAX), T_MAX), yticks=(zmin, 0.5*(zmin+zmax), zmax), gap=0.05)
 
-        tufte_axis(axes[1][j0], bnds_x=(0, 2), bnds_y=(P_MIN, P_MAX), xticks=(0, 1, 2), yticks=(P_MIN, 0.5*(P_MIN+P_MAX), P_MAX))
-        tufte_axis(axes[1][j1], bnds_x=(0, 2), bnds_y=(P_MIN, P_MAX), xticks=(0, 1, 2), yticks=(P_MIN, 0.5*(P_MIN+P_MAX), P_MAX))
+        tufte_axis(axes[1][j0], bnds_x=(0, 2), bnds_y=(P_MIN, P_MAX), xticks=(0, 1, 2), yticks=(P_MIN, 0.5*(P_MIN+P_MAX), P_MAX), gap=0.05)
+        tufte_axis(axes[1][j1], bnds_x=(0, 2), bnds_y=(P_MIN, P_MAX), xticks=(0, 1, 2), yticks=(P_MIN, 0.5*(P_MIN+P_MAX), P_MAX), gap=0.05)
 
-        tufte_axis(axes[2][j0], bnds_x=(0, 2), bnds_y=(E_MIN, E_MAX), xticks=(0, 1, 2), yticks=(E_MIN, 0.5*(E_MIN+E_MAX), E_MAX))
-        tufte_axis(axes[2][j1], bnds_x=(0, 2), bnds_y=(E_MIN, E_MAX), xticks=(0, 1, 2), yticks=(E_MIN, 0.5*(E_MIN+E_MAX), E_MAX))
+        tufte_axis(axes[2][j0], bnds_x=(0, 2), bnds_y=(E_MIN, E_MAX), xticks=(0, 1, 2), yticks=(E_MIN, 0.5*(E_MIN+E_MAX), E_MAX), gap=0.05)
+        tufte_axis(axes[2][j1], bnds_x=(0, 2), bnds_y=(E_MIN, E_MAX), xticks=(0, 1, 2), yticks=(E_MIN, 0.5*(E_MIN+E_MAX), E_MAX), gap=0.05)
 
         axes[0][j0].set_title("Prior")
-        axes[0][j1].set_title("DSI")
+        axes[0][j1].set_title("DSI (Unconditional)")
 
         axes[0][j0].set_xlabel(LABEL_TEMP)
         axes[0][j1].set_xlabel(LABEL_TEMP)
@@ -522,7 +624,7 @@ def plot_transformation(pres_t, pres_obs, pres_dsi, pres_trn, well_nums, fname):
     for ax in axes.flat:
         ax.axvline(1, ls="--", c="gray", lw=1, ymin=1/12, ymax=11/12, zorder=0)
         ax.set_box_aspect(1)
-        tufte_axis(ax, bnds_x=(0, 2), bnds_y=(1, 9), xticks=(0, 1, 2), yticks=(1, 5, 9))
+        # tufte_axis(ax, bnds_x=(0, 2), bnds_y=(1, 9), xticks=(0, 1, 2), yticks=(1, 5, 9))
         
     for ax in axes[-1]:
         ax.set_xlabel(LABEL_TIME)
@@ -539,38 +641,36 @@ def plot_transformation(pres_t, pres_obs, pres_dsi, pres_trn, well_nums, fname):
 
 def plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n, 
                            temp_pri, pres_pri, enth_pri,
-                           temp_ms, temp_ss,
-                           pres_ms, pres_ss, 
-                           enth_ms, enth_ss, 
+                           temp_post, pres_post, enth_post,
                            well_nums, n_samples, fname):
     
     cmap = mpl.colormaps["Blues"].resampled(1000)
-    cmap = cmap(np.linspace(0.25, 0.9, len(temp_ms)))
+    cmap = cmap(np.linspace(0.25, 0.9, len(n_samples)))
 
     handles = []
 
-    t_min = [115, 20, 20, 40]
-    t_max = [175, 90, 180, 150]
+    t_min = [20, 220, 50, 0]
+    t_max = [80, 300, 280, 100]
 
-    p_min = [5, 2, 6, 5]
-    p_max = [7.5, 5.5, 10, 7]
+    p_min = [3, 5, 2, 3]
+    p_max = [8, 10, 8, 8]
 
-    e_min = [900, 400, 700, 100]
-    e_max = [1100, 600, 1200, 700]
+    e_min = [400, 1000, 300, 200]
+    e_max = [700, 1200, 800, 800]
 
-    xs_temp = [np.linspace(t0, t1, 1000) for (t0, t1) in zip(t_min, t_max)]
-    xs_pres = [np.linspace(p0, p1, 1000) for (p0, p1) in zip(p_min, p_max)]
-    xs_enth = [np.linspace(e0, e1, 1000) for (e0, e1) in zip(e_min, e_max)]
+    xs_temp = [np.linspace(t0, t1, 10000) for (t0, t1) in zip(t_min, t_max)]
+    xs_pres = [np.linspace(p0, p1, 10000) for (p0, p1) in zip(p_min, p_max)]
+    xs_enth = [np.linspace(e0, e1, 10000) for (e0, e1) in zip(e_min, e_max)]
 
     fig, axes = plt.subplots(3, 4, figsize=(10, 9.5))
 
-    t_den_max = [0.2, 0.30, 0.40, 0.25]
-    p_den_max = [9, 6, 10, 24]
-    e_den_max = [0.1, 0.1, 0.06, 0.07]
+    t_den_max = [0.30, 0.10, 0.05, 0.10]
+    p_den_max = [2, 5, 3, 1]
+    e_den_max = [0.05, 0.1, 0.01, 0.02]
 
     for j in range(4):
 
-        kde_temp = stats.gaussian_kde(temp_pri[j])
+        kde_temp = stats.gaussian_kde(temp_pri[j], bw_method=2.0)
         p_pri, = axes[0][j].plot(xs_temp[j], kde_temp(xs_temp[j]), c="gray", lw=1.2, zorder=1, label="Prior")
 
         kde_pres = stats.gaussian_kde(pres_pri[j])
@@ -590,19 +690,19 @@ def plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n,
         axes[1][j].set_xlim([p_min[j], p_max[j]])
         axes[2][j].set_xlim([e_min[j], e_max[j]]) 
 
-        for k, (m, s) in enumerate(zip(temp_ms, temp_ss)):
-            density = stats.norm(m[j], s[j]).pdf(xs_temp[j])
-            p, = axes[0][j].plot(xs_temp[j], density, c=cmap[k], lw=1.2, zorder=2, label=f"DSI ($\ell={n_samples[k]}$)")
+        for k, temps in enumerate(temp_post):
+            kde_temp = stats.gaussian_kde(temps[j])
+            p, = axes[0][j].plot(xs_temp[j], kde_temp(xs_temp[j]), c=cmap[k], lw=1.2, zorder=2, label=f"DSI ($J={n_samples[k]}$)")
             if j == 0:
                 handles.append(p)
 
-        for k, (m, s) in enumerate(zip(pres_ms, pres_ss)):
-            density = stats.norm(m[j], s[j]).pdf(xs_pres[j])
-            axes[1][j].plot(xs_pres[j], density, c=cmap[k], lw=1.2, zorder=2)
+        for k, press in enumerate(pres_post):
+            kde_pres = stats.gaussian_kde(press[j])
+            axes[1][j].plot(xs_pres[j], kde_pres(xs_pres[j]), c=cmap[k], lw=1.2, zorder=2)
 
-        for k, (m, s) in enumerate(zip(enth_ms, enth_ss)):
-            density = stats.norm(m[j], s[j]).pdf(xs_enth[j])
-            axes[2][j].plot(xs_enth[j], density, c=cmap[k], lw=1.2, zorder=2)
+        for k, enths in enumerate(enth_post):
+            kde_enth = stats.gaussian_kde(enths[j])
+            axes[2][j].plot(xs_enth[j], kde_enth(xs_enth[j]), c=cmap[k], lw=1.2, zorder=2)
 
     for ax in axes.flat:
         ax.set_box_aspect(1)
@@ -679,28 +779,62 @@ if PLOT_PERMS:
 
 if PLOT_DATA:
 
-    well_num = 0
+    for well_num in range(9):
 
-    elev_t = data_handler_fine.downhole_elevs[well_num]
-    time_t = data_handler_fine.ts / (SECS_PER_WEEK * 52)
+        elev_t = data_handler_fine.downhole_elevs[well_num]
+        time_t = data_handler_fine.ts / (SECS_PER_WEEK * 52)
 
-    temp_t = data_handler_fine.get_pr_temperatures(F_t)[well_num]
-    pres_t = data_handler_fine.get_pr_pressures(F_t).T[well_num]
-    enth_t = data_handler_fine.get_pr_enthalpies(F_t).T[well_num]
+        temp_t = data_handler_fine.get_pr_temperatures(F_t)[well_num]
+        pres_t = data_handler_fine.get_pr_pressures(F_t).T[well_num]
+        enth_t = data_handler_fine.get_pr_enthalpies(F_t).T[well_num]
 
-    elev_obs = temp_obs_zs
-    time_obs = data_handler_crse.ts_prod_obs / (SECS_PER_WEEK * 52)
+        elev_obs = temp_obs_zs
+        time_obs = data_handler_crse.ts_prod_obs / (SECS_PER_WEEK * 52)
 
-    temp_obs, pres_obs, enth_obs = data_handler_fine.split_obs(y)
+        temp_obs, pres_obs, enth_obs = data_handler_fine.split_obs(y)
 
-    temp_obs = temp_obs.T[well_num]
-    pres_obs = pres_obs.T[well_num]
-    enth_obs = enth_obs.T[well_num]
+        temp_obs = temp_obs.T[well_num % 7]
+        pres_obs = pres_obs.T[well_num % 7]
+        enth_obs = enth_obs.T[well_num % 7]
 
-    fname = "figures/fig12.pdf"
+        fname = f"figures/fig12_{well_num}.pdf"
 
-    plot_data(elev_t, time_t, temp_t, pres_t, enth_t, 
-              elev_obs, time_obs, temp_obs, pres_obs, enth_obs, fname)
+        plot_data(elev_t, time_t, temp_t, pres_t, enth_t, 
+                elev_obs, time_obs, temp_obs, pres_obs, enth_obs, fname)
+
+
+if PLOT_PRIOR_PREDICTIONS:
+
+    well_nums = [5, 7]
+
+    temp_t = data_handler_fine.get_pr_temperatures(F_t)
+    pres_t = data_handler_fine.get_pr_pressures(F_t)
+    enth_t = data_handler_fine.get_pr_enthalpies(F_t)
+
+    temp_t = [temp_t[n] for n in well_nums]
+    pres_t = pres_t.T[well_nums]
+    enth_t = enth_t.T[well_nums]
+
+    Fs_pri = np.load("data/Fs.npy")[:, :100]
+    Fs_dsi = np.load("data/Fs_pri.npy")[:, :100]
+
+    temp_pri = [np.array([data_handler_crse.get_pr_temperatures(F_i)[n] for F_i in Fs_pri.T]) for n in well_nums]
+    temp_dsi = [np.array([data_handler_crse.get_pr_temperatures(F_i)[n] for F_i in Fs_dsi.T]) for n in well_nums]
+
+    pres_pri = [np.array([data_handler_crse.get_pr_pressures(F_i).T[n] for F_i in Fs_pri.T]) for n in well_nums]
+    pres_dsi = [np.array([data_handler_crse.get_pr_pressures(F_i).T[n] for F_i in Fs_dsi.T]) for n in well_nums]
+
+    enth_pri = [np.array([data_handler_crse.get_pr_enthalpies(F_i).T[n] for F_i in Fs_pri.T]) for n in well_nums]
+    enth_dsi = [np.array([data_handler_crse.get_pr_enthalpies(F_i).T[n] for F_i in Fs_dsi.T]) for n in well_nums]
+
+    elevs_crse = [data_handler_crse.downhole_elevs[n] for n in well_nums]
+
+    fname = "figures/prior_predictions.pdf"
+
+    plot_prior_vs_dsi(elevs_crse, 
+                      temp_pri, pres_pri, enth_pri, 
+                      temp_dsi, pres_dsi, enth_dsi, 
+                      well_nums, fname)
 
 
 if PLOT_DSI_PREDICTIONS_A:
@@ -721,7 +855,7 @@ if PLOT_DSI_PREDICTIONS_A:
     enth_obs = enth_obs.T[well_nums]
 
     Fs_pri = np.load("data/Fs.npy")
-    Fs_dsi = np.load("data/Fs_post.npy").T
+    Fs_dsi = np.load("data/Fs_post.npy")
 
     temp_pri = [np.array([data_handler_crse.get_pr_temperatures(F_i)[n] for F_i in Fs_pri.T]) for n in well_nums]
     temp_dsi = [np.array([data_handler_crse.get_pr_temperatures(F_i)[n] for F_i in Fs_dsi.T]) for n in well_nums]
@@ -759,7 +893,7 @@ if PLOT_DSI_PREDICTIONS_B:
     enth_obs = None
 
     Fs_pri = np.load("data/Fs.npy")
-    Fs_dsi = np.load("data/Fs_post.npy").T
+    Fs_dsi = np.load("data/Fs_post.npy")
 
     temp_pri = [np.array([data_handler_crse.get_pr_temperatures(F_i)[n] for F_i in Fs_pri.T]) for n in well_nums]
     temp_dsi = [np.array([data_handler_crse.get_pr_temperatures(F_i)[n] for F_i in Fs_dsi.T]) for n in well_nums]
@@ -805,13 +939,11 @@ if PLOT_SAMPLE_COMP:
 
     well_nums = [2, 3, 7, 8]
 
-    n_samples = [10, 100, 250, 500, 676]
+    n_samples = [100, 250, 500, 1000, 1400]
 
     Fs_pri = np.load("data/Fs.npy")
 
-    ms = [np.load(f"data/m_post_{n}.npy") for n in n_samples]
-    Cs = [np.load(f"data/C_post_{n}.npy") for n in n_samples]
-    ss = [np.sqrt(np.diag(C)) for C in Cs]
+    Fs_post = [np.load(f"data/Fs_post_{n}.npy") for n in n_samples]
 
     temp_t = data_handler_fine.get_pr_temperatures(F_t)
     pres_t = data_handler_fine.get_pr_pressures(F_t)
@@ -821,17 +953,11 @@ if PLOT_SAMPLE_COMP:
     pres_t_n = pres_t[-1][well_nums]
     enth_t_n = enth_t[-1][well_nums]
 
-    temp_ms = [data_handler_crse.get_pr_temperatures(m) for m in ms]
-    temp_ss = [data_handler_crse.get_pr_temperatures(s) for s in ss]
+    temp_post = [[data_handler_crse.get_pr_temperatures(F_i) for F_i in Fs_post_i.T] for Fs_post_i in Fs_post]
+    temp_post = [np.array([[t[-1] for t in temp] for temp in temp_post_i]).T[well_nums] for temp_post_i in temp_post]
 
-    temp_ms = np.array([[m[n][-1] for n in well_nums] for m in temp_ms])
-    temp_ss = np.array([[s[n][-1] for n in well_nums] for s in temp_ss])
-
-    pres_ms = np.array([data_handler_crse.get_pr_pressures(m)[-1][well_nums] for m in ms])
-    pres_ss = np.array([data_handler_crse.get_pr_pressures(s)[-1][well_nums] for s in ss])
-
-    enth_ms = np.array([data_handler_crse.get_pr_enthalpies(m)[-1][well_nums] for m in ms])
-    enth_ss = np.array([data_handler_crse.get_pr_enthalpies(s)[-1][well_nums] for s in ss])
+    pres_post = [np.array([data_handler_crse.get_pr_pressures(F_i)[-1] for F_i in Fs_post_i.T]).T[well_nums] for Fs_post_i in Fs_post]
+    enth_post = [np.array([data_handler_crse.get_pr_enthalpies(F_i)[-1] for F_i in Fs_post_i.T]).T[well_nums] for Fs_post_i in Fs_post]
 
     temp_pri = [data_handler_crse.get_pr_temperatures(F_i) for F_i in Fs_pri.T]
     temp_pri = np.array([[t[-1] for t in temp] for temp in temp_pri]).T
@@ -846,7 +972,5 @@ if PLOT_SAMPLE_COMP:
 
     plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n, 
                            temp_pri, pres_pri, enth_pri,
-                           temp_ms, temp_ss,
-                           pres_ms, pres_ss, 
-                           enth_ms, enth_ss,
+                           temp_post, pres_post, enth_post,
                            well_nums, n_samples, fname)

@@ -1,7 +1,7 @@
 from setup import *
 
 
-Ne = 1000
+Ne = 2_000
 
 ps = np.stack([prior.sample() for _ in range(Ne)], axis=1)
 np.save("ps", ps)

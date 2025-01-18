@@ -10,6 +10,9 @@ RUN_SAMPLE_COMPARISON = True
 Fs = np.load("data/Fs.npy")
 Gs = np.load("data/Gs.npy")
 
+print(Fs.shape)
+print(Gs.shape)
+
 
 if RUN_DSI:
 
@@ -23,7 +26,7 @@ if RUN_DSI:
 
 if RUN_SAMPLE_COMPARISON:
 
-    n_samples = [10, 100, 250, 500, 600, 676]
+    n_samples = [10, 100, 250, 500, 1000]
 
     for n in n_samples:
         
