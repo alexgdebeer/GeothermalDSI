@@ -61,4 +61,4 @@ ax.set_xlabel(r"$y_{i}$")
 ax.set_ylabel(r"$\mathcal{F}^{\bm{y}}_{i}(y_{i})$")
 
 plt.tight_layout()
-plt.savefig("cdf.pdf")
+plt.savefig("fig1.pdf")
