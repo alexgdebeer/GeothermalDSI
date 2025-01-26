@@ -29,7 +29,7 @@ Pkg.instantiate()
 ```
 to install the project dependencies. You will then be able to run any of the scripts at the top level of the folder.
 
-To compute a full characterisation of the posterior using MCMC, run `run_pcn.jl` (this will take several days on a desktop computer). To compute a local linearisation about the MAP estimate, run `run_lmap.jl`, to run the DSI algorithm, run `run_dsi.jl`, and to sample from the prior, run `run_pri.jl`. To carry out a comparison of the performance of DSI with varying sample sizes, run `run_dsi_comparison.jl`.
+To sample from the prior, run `01_run_pri.jl`. To compute a full characterisation of the posterior using MCMC, run `02_run_pcn.jl` (this will take several days on a desktop computer). To compute a local linearisation about the MAP estimate, run `04_run_lmap.jl`. To run the DSI algorithm, run `05_run_dsi.jl`.
 
 ### Three-Dimensional Reservoir Model
 
@@ -39,9 +39,9 @@ python3.8 -m pip install -r requirements.txt
 ```
 to install the project dependencies. You will also need to install the Waiwera geothermal simulator if you would like to run any simulations; for further information, consult the [Waiwera website](https://waiwera.github.io). 
 
- - To generate the ensemble of reservoir models used to estimate the covariance matrices required as part of the DSI algorithm, run `generate_ensemble.py`. The resulting simulation input files can then be run [locally using Docker](https://waiwera.readthedocs.io/en/latest/run.html) (though this is likely to take a while), or on a high-performance computing cluster which contains a Waiwera build. We have included the jobfile we used to run the simulations on the Maui cluster operated by NeSI (New Zealand eScience Infrastructure).
- - To gather the statistics of the quantities of interest, run `process_output.py`. This will ignore the results associated with failed simulations. 
- - To run the DSI algorithm to approximate the posterior predictive distribution of the quantities of interest, run `run_dsi.py` or `run_dsi_trans.py` (which will run the DSI algorithm with a transformation applied to the pressure predictions).
+ - To generate the ensemble of reservoir models used to estimate the covariance matrices required as part of the DSI algorithm, run `01_generate_ensemble.py`. The resulting simulation input files can then be run [locally using Docker](https://waiwera.readthedocs.io/en/latest/run.html) (though this is likely to take a while), or on a high-performance computing cluster which contains a Waiwera build. We have included the jobfile we used to run the simulations on the Maui cluster operated by NeSI (New Zealand eScience Infrastructure).
+ - To gather the statistics of the quantities of interest, run `02_process_output.py`. This will ignore the results associated with failed simulations. 
+ - To run the DSI algorithm to approximate the posterior predictive distribution of the quantities of interest, run `03_run_dsi.py`.
 
 The `models` folder contains the meshes for the fine and coarse models used in the paper, and the input and output files for the true system. Files related to the true system are also located in `data/truth`. 
 
@@ -51,7 +51,7 @@ The `models` folder contains the meshes for the fine and coarse models used in t
 
 ## Generating Figures
 
-Each model folder contains a script called `plotting.py`, which can be run to reproduce the figures from the paper associated with the model. Running these script requires Python >= 3.8, and a subset of the dependencies required to run the experiments for the three-dimensional reservoir model. The figures are saved to the `figures` directory, and have the same numbering as in the manuscript. Some figures are composed of multiple parts; in these instances, the parts that make up the figure as saved as `fig1a.pdf`, `fig1b.pdf`, etc. 
+Each model folder contains a script called `0X_plot_results.py`, which can be run to reproduce the figures from the paper associated with the model. Running these script requires Python >= 3.8, and a subset of the dependencies required to run the experiments for the three-dimensional reservoir model. The figures are saved to the `figures` directory, and have the same numbering as in the manuscript. Some figures are composed of multiple parts; in these instances, the parts that make up the figure as saved as `fig1a.pdf`, `fig1b.pdf`, etc. 
 
 ## Issues
 
