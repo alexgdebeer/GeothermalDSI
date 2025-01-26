@@ -53,17 +53,16 @@ CMAP_PERM = cmocean.cm.turbid.reversed()
 CMAP_UPFLOW = cmocean.cm.thermal
 CMAP_TEMP = cmocean.cm.balance
 
-PLOT_GRID = False
-PLOT_TRUTH = False
-PLOT_UPFLOWS = False
-PLOT_CAPS = False
-PLOT_PERMS = False
-PLOT_DATA = False
+PLOT_GRID = True
+PLOT_TRUTH = True
+PLOT_UPFLOWS = True
+PLOT_CAPS = True
+PLOT_PERMS = True
+PLOT_DATA = True
 PLOT_PRIOR_PREDICTIONS = True
-PLOT_DSI_PREDICTIONS_A = False
-PLOT_DSI_PREDICTIONS_B = False
-PLOT_TRANSFORMATION = False
-PLOT_SAMPLE_COMP = False
+PLOT_DSI_PREDICTIONS_A = True
+PLOT_DSI_PREDICTIONS_B = True
+PLOT_SAMPLE_COMP = True
 
 FULL_WIDTH = 10
 
@@ -614,50 +613,6 @@ def plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t,
     plt.savefig(fname)
 
 
-def plot_transformation(pres_t, pres_obs, pres_dsi, pres_trn, well_nums, fname):
-    
-    ts_crse = data_handler_crse.ts / (SECS_PER_WEEK * 52)
-    ts_fine = data_handler_fine.ts / (SECS_PER_WEEK * 52)
-    ts_obs = data_handler_fine.ts_prod_obs / (SECS_PER_WEEK * 52)
-
-    pres_qs_dsi = [np.quantile(p, q=(0.025, 0.975), axis=0) for p in pres_dsi]
-    pres_qs_trn = [np.quantile(p, q=(0.025, 0.975), axis=0) for p in pres_trn]
-
-    _, axes = plt.subplots(2, 4, figsize=(10, 5), sharex=True, sharey=True)
-
-    for i in range(4):
-
-        axes[0][i].plot(ts_fine, pres_t[i], c="k", lw=1.5, zorder=3)
-        axes[1][i].plot(ts_fine, pres_t[i], c="k", lw=1.5, zorder=3)
-
-        axes[0][i].plot(ts_crse, pres_dsi[i].T, c=COL_PRES, lw=0.5, alpha=0.4, zorder=1)
-        axes[1][i].plot(ts_crse, pres_trn[i].T, c=COL_PRES, lw=0.5, alpha=0.4, zorder=1)
-
-        axes[0][i].plot(ts_crse, pres_qs_dsi[i].T, c="dimgrey", lw=1.0)
-        axes[1][i].plot(ts_crse, pres_qs_trn[i].T, c="dimgrey", lw=1.0)
-
-        if pres_obs[i] is not None:
-            axes[0][i].scatter(ts_obs, pres_obs[i], c="k", s=6, zorder=4)
-            axes[1][i].scatter(ts_obs, pres_obs[i], c="k", s=6, zorder=4)
-
-    for ax in axes.flat:
-        ax.axvline(1, ls="--", c="gray", lw=1, ymin=1/12, ymax=11/12, zorder=0)
-        ax.set_box_aspect(1)
-        # tufte_axis(ax, bnds_x=(0, 2), bnds_y=(1, 9), xticks=(0, 1, 2), yticks=(1, 5, 9))
-        
-    for ax in axes[-1]:
-        ax.set_xlabel(LABEL_TIME)
-
-    axes[0][0].set_ylabel(LABEL_PRES)
-    axes[1][0].set_ylabel(LABEL_PRES)
-
-    for i, n in enumerate(well_nums):
-        axes[0][i].set_title(get_well_name(n))
-
-    plt.tight_layout()
-    plt.savefig(fname)
-
-
 def plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n, 
                            temp_pri, pres_pri, enth_pri,
                            temp_post, pres_post, enth_post,
@@ -748,32 +703,32 @@ def plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n,
 
 if PLOT_GRID:
 
-    fname = f"figures/fig7a.png"
+    fname = f"figures/fig9a.png"
     plot_mesh(mesh_crse.fem_mesh, wells_crse, feedzone_depths, fname)
 
-    fname = "figures/fig7b.pdf"
+    fname = "figures/fig9b.pdf"
     plot_grid_layer(mesh_crse, cur_well_centres, new_well_centres, fname)
 
 
 if PLOT_TRUTH:
 
-    fname = "figures/fig8a.png"
+    fname = "figures/fig10a.png"
     temps = get_ns_temps("models/FL13383_NS")
     logks = p_t[:mesh_fine.m.num_cells]
     plot_truth(mesh_fine, mesh_fine.fem_mesh, temps, logks, fname)
 
-    fname = "figures/fig8b.pdf"
+    fname = "figures/fig10b.pdf"
     plot_colourbar(CMAP_TEMP, 0, 250, LABEL_TEMP, fname)
 
     upflows = p_t[-mesh_fine.m.num_columns:]
-    fname = "figures/fig8c.pdf"
+    fname = "figures/fig10c.pdf"
     plot_true_upflows(mesh_fine.m, upflows, fname)
 
 
 if PLOT_UPFLOWS:
 
     upflows = ps[-mesh_crse.m.num_columns:, 4:8].T
-    fname = "figures/fig9.pdf"
+    fname = "figures/fig11.pdf"
     plot_upflows(mesh_crse.m, upflows, fname)
 
 
@@ -782,17 +737,17 @@ if PLOT_CAPS:
     logks = ps[:mesh_crse.m.num_cells, 1:5].T
     cap_cell_inds = [np.nonzero(k < -15.75)[0] for k in logks]
 
-    fname = "figures/fig10.png"
+    fname = "figures/fig12.png"
     plot_caps(mesh_crse.m, mesh_crse.fem_mesh, cap_cell_inds, fname)
 
 
 if PLOT_PERMS:
 
     logks = ps[:mesh_crse.m.num_cells, 1:5].T
-    fname = "figures/fig11a.png"
+    fname = "figures/fig13a.png"
     plot_slices(mesh_crse, mesh_crse.fem_mesh, logks, fname)
 
-    fname = "figures/fig11b.pdf"
+    fname = "figures/fig13b.pdf"
     plot_colourbar(CMAP_PERM, MIN_PERM, MAX_PERM, LABEL_PERM, fname)
 
 
@@ -816,10 +771,10 @@ if PLOT_DATA:
     pres_obs = pres_obs.T[well_num]
     enth_obs = enth_obs.T[well_num]
 
-    fname = f"figures/fig12.pdf"
+    fname = "figures/fig14.pdf"
 
     plot_data(elev_t, time_t, temp_t, pres_t, enth_t, 
-            elev_obs, time_obs, temp_obs, pres_obs, enth_obs, fname)
+              elev_obs, time_obs, temp_obs, pres_obs, enth_obs, fname)
 
 
 if PLOT_PRIOR_PREDICTIONS:
@@ -848,7 +803,7 @@ if PLOT_PRIOR_PREDICTIONS:
 
     elevs_crse = [data_handler_crse.downhole_elevs[n] for n in well_nums]
 
-    fname = "figures/prior_predictions.pdf"
+    fname = "figures/fig15.pdf"
 
     plot_prior_vs_dsi(elevs_crse, 
                       temp_pri, pres_pri, enth_pri, 
@@ -888,7 +843,7 @@ if PLOT_DSI_PREDICTIONS_A:
     elevs_fine = [data_handler_fine.downhole_elevs[n] for n in well_nums]
     elevs_crse = [data_handler_crse.downhole_elevs[n] for n in well_nums]
 
-    fname = "figures/fig13.pdf"
+    fname = "figures/fig16.pdf"
 
     plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t, 
                          elevs_crse, temp_pri, pres_pri, enth_pri, 
@@ -926,33 +881,13 @@ if PLOT_DSI_PREDICTIONS_B:
     elevs_fine = [data_handler_fine.downhole_elevs[n] for n in well_nums]
     elevs_crse = [data_handler_crse.downhole_elevs[n] for n in well_nums]
 
-    fname = "figures/fig14.pdf"
+    fname = "figures/fig17.pdf"
 
     plot_dsi_predictions(elevs_fine, temp_t, pres_t, enth_t, 
                          elevs_crse, temp_pri, pres_pri, enth_pri, 
                          temp_dsi, pres_dsi, enth_dsi,
                          pres_obs, enth_obs, well_nums, fname,
                          forecast_only=True)
-
-
-if PLOT_TRANSFORMATION:
-
-    Fs_dsi = np.load("data/Fs_post.npy").T
-    Fs_trn = np.load("data/Fs_post_trans.npy")
-
-    well_nums = [2, 3, 7, 8]
-
-    pres_t = data_handler_fine.get_pr_pressures(F_t).T[well_nums]
-
-    pres_obs = data_handler_fine.split_obs(y)[1]
-    pres_obs = [*pres_obs.T[[2, 3]], None, None]
-
-    pres_dsi = [np.array([data_handler_crse.get_pr_pressures(F_i).T[n] for F_i in Fs_dsi.T]) for n in well_nums]
-    pres_trn = [np.array([data_handler_crse.get_pr_pressures(F_i).T[n] for F_i in Fs_trn.T]) for n in well_nums]
-
-    fname = "figures/fig15.pdf"
-
-    plot_transformation(pres_t, pres_obs, pres_dsi, pres_trn, well_nums, fname)
 
 
 if PLOT_SAMPLE_COMP: 
@@ -988,7 +923,7 @@ if PLOT_SAMPLE_COMP:
     pres_pri = pres_pri[well_nums]
     enth_pri = enth_pri[well_nums]
 
-    fname = "figures/fig16.pdf"
+    fname = "figures/fig18.pdf"
 
     plot_sample_comparison(temp_t_n, pres_t_n, enth_t_n, 
                            temp_pri, pres_pri, enth_pri,
