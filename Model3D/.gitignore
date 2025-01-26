@@ -1,4 +1,8 @@
 figures/figures.pptx
 
+data/ps.npy
+data/grf_2d/
+data/grf_3d/
+
 *.cid
 *.idcheck
