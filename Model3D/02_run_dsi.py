@@ -2,10 +2,6 @@ import numpy as np
 
 from src.dsi import DSIMapping
 
-import os
-#print(os.getcwd())
-#os.chdir("Model3D")
-
 from setup import *
 
 
@@ -47,23 +43,6 @@ if RUN_SAMPLE_COMPARISON:
         np.save(f"data/Fs_post_{n}", Fs_post)
 
 
-def process_predictions(Fs):
-    """Extracts the modelled pressures, temperatures and enthalpies at 
-    each well from a set of DSI predictions.
-    """
-
-    temp_post = data_handler_crse.get_pr_temperatures(Fs)
-
-    pres_post = data_handler_crse.get_pr_pressures(Fs)
-    enth_post = data_handler_crse.get_pr_enthalpies(Fs)
-
-    #temp_qs_dsi = [np.quantile(t, q=(0.025, 0.975), axis=0) for t in temp_dsi]
-    #pres_qs_dsi = [np.quantile(p, q=(0.025, 0.975), axis=0) for p in pres_dsi]
-    #enth_qs_dsi = [np.quantile(e, q=(0.025, 0.975), axis=0) for e in enth_dsi]
-
-
-# Could eventually do a breakdown by data type...
-# Could also plot the mean prior variances and the mean posterior variances for each data type
 if RUN_VALIDATION: 
     
     dsi_mapping = DSIMapping(GFs[:, :1300])
@@ -73,9 +52,8 @@ if RUN_VALIDATION:
 
     in_bounds = np.zeros((Fs_v.shape[0], 100), dtype=bool)
 
-    for i, (G_i, F_i) in enumerate(zip(Gs_v.T, Fs_v.T)): # This is the validation data
-
-        # TODO: these have both the NS temperatures and the temperatures at the end of the forecast period. probably remove the NS ones (should be easy enough, just remove first n elements)
+    for i, (G_i, F_i) in enumerate(zip(Gs_v.T, Fs_v.T)):
+        
         Fs_post_v = dsi_mapping.generate_conditional_samples(G_i, n=1000)
         
         quantiles = np.quantile(Fs_post_v, q=(0.025, 0.975), axis=1)
