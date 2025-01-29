@@ -53,16 +53,16 @@ CMAP_PERM = cmocean.cm.turbid.reversed()
 CMAP_UPFLOW = cmocean.cm.thermal
 CMAP_TEMP = cmocean.cm.balance
 
-PLOT_GRID = True
-PLOT_TRUTH = True
-PLOT_UPFLOWS = True
-PLOT_CAPS = True
-PLOT_PERMS = True
+PLOT_GRID = False
+PLOT_TRUTH = False
+PLOT_UPFLOWS = False
+PLOT_CAPS = False
+PLOT_PERMS = False
 PLOT_DATA = True
-PLOT_PRIOR_PREDICTIONS = True
-PLOT_DSI_PREDICTIONS_A = True
-PLOT_DSI_PREDICTIONS_B = True
-PLOT_SAMPLE_COMP = True
+PLOT_PRIOR_PREDICTIONS = False
+PLOT_DSI_PREDICTIONS_A = False
+PLOT_DSI_PREDICTIONS_B = False
+PLOT_SAMPLE_COMP = False
 
 FULL_WIDTH = 10
 
@@ -323,7 +323,6 @@ def plot_data(elev, time, temp, pres, enth,
               elev_obs, time_obs, temp_obs, pres_obs, enth_obs,
               fname):
 
-
     _, axes = plt.subplots(1, 3, figsize=(7.5, 2.5))
 
     axes[0].plot(temp, elev, c="k", lw=1.5, zorder=2)
@@ -334,8 +333,26 @@ def plot_data(elev, time, temp, pres, enth,
     axes[1].scatter(time_obs, pres_obs, c="k", s=6, zorder=2)
     axes[2].scatter(time_obs, enth_obs, c="k", s=6, zorder=2)
 
-    axes[1].axvline(1, ls="--", c="gray", lw=1.5, ymin=1/12, ymax=11/12, zorder=1)
-    axes[2].axvline(1, ls="--", c="gray", lw=1.5, ymin=1/12, ymax=11/12, zorder=1)
+    # axes[1].axvline(1, ls="--", c="gray", lw=1.5, ymin=1/12, ymax=11/12, zorder=1)
+    # axes[2].axvline(1, ls="--", c="gray", lw=1.5, ymin=1/12, ymax=11/12, zorder=1)
+
+    forecast_p = patches.Rectangle(
+        xy=(1, 5), 
+        width=1, 
+        height=3,
+        facecolor="gainsboro",
+        zorder=0
+    )
+    forecast_e = patches.Rectangle(
+        xy=(1, 300), 
+        width=1, 
+        height=300, 
+        facecolor="gainsboro", 
+        zorder=0
+    )
+
+    axes[1].add_patch(deepcopy(forecast_p))
+    axes[2].add_patch(deepcopy(forecast_e))
 
     axes[0].set_xlabel(LABEL_TEMP)
     axes[1].set_xlabel(LABEL_TIME)
