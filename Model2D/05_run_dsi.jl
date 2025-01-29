@@ -2,6 +2,9 @@ include("setup.jl")
 include("InferenceAlgorithms/InferenceAlgorithms.jl")
 
 
+Z_MIN = 1e-4
+
+
 struct CDFTransformer
 
     dim_x::Int
@@ -13,8 +16,13 @@ struct CDFTransformer
     cdf_elem_size::AbstractFloat
     row_inds::UnitRange
 
-    function CDFTransformer(FGs::AbstractMatrix)
+    function CDFTransformer(
+        FGs::AbstractMatrix, 
+        FGs_min::AbstractVector, 
+        FGs_max::AbstractVector
+    )
 
+        FGs = hcat(FGs, FGs_min, FGs_max)
         dim_x, n_samples = size(FGs)
         FGs_sorted = sort(FGs, dims=2)
 
@@ -42,7 +50,18 @@ function transform_inv(
 
     dzs = (FG_i .- FGs_0) ./ (FGs_1 .- FGs_0)
     zs = t.cdf_elem_size * (inds_0 .+ dzs)
-    clamp!(zs, 1e-4, 1.0-1e-4)
+    
+    mask_l = zs .< Z_MIN
+    mask_r = zs .> 1.0 .- Z_MIN
+    mask_c = .!(mask_l) .& .!(mask_r)
+
+    # Rescale stuff to account for less probability at the edges
+    zs[mask_l] .*= (Z_MIN ./ t.cdf_elem_size)
+    zs[mask_r] = 1.0 .- Z_MIN * (1.0 .- zs[mask_r]) ./ t.cdf_elem_size
+    zs[mask_c] = Z_MIN .+ (zs[mask_c] .- t.cdf_elem_size) .* (1.0 .- 2.0 .* Z_MIN) ./ (1.0 .- 2.0 .* t.cdf_elem_size)
+    
+    clamp!(zs, 1e-8, 1.0-1e-8)
+
     ξs = quantile(Normal(), zs)
     return ξs
 
@@ -54,7 +73,16 @@ function transform(
 )
 
     zs_i = cdf.(Normal(), ξs_i)
-    clamp!(zs_i, 1e-4, 1.0-1e-4)
+    clamp!(zs_i, 1e-8, 1.0-1e-8)
+
+    # Rescale elements of CDF
+    mask_l = zs_i .< Z_MIN
+    mask_r = zs_i .> 1.0 .- Z_MIN
+    mask_c = .!(mask_l) .& .!(mask_r)
+
+    zs_i[mask_l] .*= (t.cdf_elem_size ./ Z_MIN)
+    zs_i[mask_r] = 1.0 .- t.cdf_elem_size * (1.0 .- zs_i[mask_r]) ./ Z_MIN 
+    zs_i[mask_c] = t.cdf_elem_size .+ (zs_i[mask_c] .- Z_MIN) .* (1.0 .- 2.0*t.cdf_elem_size) ./ (1.0 .- 2.0*Z_MIN)
 
     # Compute inverse CDF
     inds_0 = Int.(floor.(zs_i / t.cdf_elem_size))
@@ -130,7 +158,10 @@ function run_dsi(
 )
 
     FGs = [y_obs; y_pred]
-    t = CDFTransformer(FGs)
+    FGs_min = zeros(size(FGs, 1))
+    FGs_max = 21 * 1.0e6 * ones(size(FGs, 1))
+
+    t = CDFTransformer(FGs, FGs_min, FGs_max)
     
     # Back-transform
     ξs = hcat([transform_inv(t, FGs_i) for FGs_i in eachcol(FGs)]...)
@@ -174,13 +205,13 @@ for i ∈ [100, 250, 500, 1_000, 2_000, 5_000, 10_000]
 
     _, Fs_post = run_dsi(y_obs[:, 1:i], y_pred[:, 1:i], d_obs, n_samples)
 
-    Fs_pri_wells = map_to_wells(Fs_pri)
-    Fs_post_wells = map_to_wells(Fs_pri)
+    # Fs_pri_wells = map_to_wells(Fs_pri)
+    Fs_post_wells = map_to_wells(Fs_post)
 
-    h5write("data/results_dsi.h5", "dsi_preds_$i", p_post_wells)
+    h5write("data/results_dsi.h5", "dsi_preds_$i", Fs_post_wells)
 
 end
 
-Fs_pri, _ = run_dsi(y_obs, y_pred, d_obs, n_samples)
+Fs_pri, _ = run_dsi(y_obs[:, 1:1000], y_pred[:, 1:1000], d_obs, n_samples)
 Fs_pri = map_to_wells(Fs_pri)
 h5write("data/results_dsi.h5", "dsi_pri", Fs_pri)

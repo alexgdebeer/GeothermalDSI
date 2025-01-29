@@ -104,7 +104,7 @@ def read_results_data():
         data["ts_preds"] = f["ts_preds"][:]
 
     with h5py.File("data/results_dsi.h5", "r") as f:
-        data["dsi_pri"] = f["dsi_preds_pri"][:, :] / 1e6
+        data["dsi_pri"] = f["dsi_pri"][:, :] / 1e6
         for i in DSI_SAMPLES:
             data[f"dsi_preds_{i}"] = f[f"dsi_preds_{i}"][:, :] / 1e6
 
