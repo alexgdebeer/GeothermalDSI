@@ -53,16 +53,16 @@ CMAP_PERM = cmocean.cm.turbid.reversed()
 CMAP_UPFLOW = cmocean.cm.thermal
 CMAP_TEMP = cmocean.cm.balance
 
-PLOT_GRID = False
-PLOT_TRUTH = False
-PLOT_UPFLOWS = False
-PLOT_CAPS = False
-PLOT_PERMS = False
+PLOT_GRID = True
+PLOT_TRUTH = True
+PLOT_UPFLOWS = True
+PLOT_CAPS = True
+PLOT_PERMS = True
 PLOT_DATA = True
-PLOT_PRIOR_PREDICTIONS = False
-PLOT_DSI_PREDICTIONS_A = False
-PLOT_DSI_PREDICTIONS_B = False
-PLOT_SAMPLE_COMP = False
+PLOT_PRIOR_PREDICTIONS = True
+PLOT_DSI_PREDICTIONS_A = True
+PLOT_DSI_PREDICTIONS_B = True
+PLOT_SAMPLE_COMP = True
 
 FULL_WIDTH = 10
 
@@ -332,9 +332,6 @@ def plot_data(elev, time, temp, pres, enth,
     axes[0].scatter(temp_obs, elev_obs, c="k", s=6, zorder=2)
     axes[1].scatter(time_obs, pres_obs, c="k", s=6, zorder=2)
     axes[2].scatter(time_obs, enth_obs, c="k", s=6, zorder=2)
-
-    # axes[1].axvline(1, ls="--", c="gray", lw=1.5, ymin=1/12, ymax=11/12, zorder=1)
-    # axes[2].axvline(1, ls="--", c="gray", lw=1.5, ymin=1/12, ymax=11/12, zorder=1)
 
     forecast_p = patches.Rectangle(
         xy=(1, 5), 
