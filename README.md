@@ -7,13 +7,14 @@
 This repository contains code written as part of the paper "Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models", by Alex de Beer, Andrew Power, Daniel Wong, Ken Dekkers, Michael Gravatt, Elvar K. Bjarkason, John P. O'Sullivan, Michael J. O'Sullivan, Oliver J. Maclaren, and Ruanui Nicholson.
 
 ```
-@misc{deBeer2024,
+@misc{deBeer2025,
     title={Data Space Inversion for Efficient Predictions and Uncertainty Quantification for Geothermal Models}, 
-    author={Alex de Beer and Andrew Power and Daniel Wong and Ken Dekkers and Michael Gravatt and Elvar K. Bjarkason and John P. O'Sullivan and Michael J. O'Sullivan and Oliver J. Maclaren and Ruanui Nicholson},
-    year={2024},
-    eprint={2407.15401},
-    archivePrefix={arXiv},
-    url={https://arxiv.org/abs/2407.15401}, 
+    author = {Alex {de Beer} and Andrew Power and Daniel Wong and Ken Dekkers and Michael Gravatt and Elvar K. Bjarkason and John P. O’Sullivan and Michael J. O’Sullivan and Oliver J. Maclaren and Ruanui Nicholson},
+    journal = {Computers & Geosciences},
+    volume = {197},
+    pages = {105882},
+    year = {2025},
+    doi = {https://doi.org/10.1016/j.cageo.2025.105882}
 }
 ```
 
